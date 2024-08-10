@@ -420,6 +420,7 @@ namespace ai
                 creators["hand of sacrifice"] = &TriggerFactoryInternal::hand_of_sacrifice;
                 creators["blessing of sacrifice"] = &TriggerFactoryInternal::blessing_of_sacrifice;
                 creators["crusader strike"] = &TriggerFactoryInternal::crusader_strike;
+                creators["zzoldholy strike"] = &TriggerFactoryInternal::zzoldholy_strike;
             }
 
         private:
@@ -490,6 +491,7 @@ namespace ai
             static Trigger* hand_of_sacrifice(PlayerbotAI* ai) { return new HandOfSacrificeTrigger(ai); }
             static Trigger* blessing_of_sacrifice(PlayerbotAI* ai) { return new BlessingOfSacrificeTrigger(ai); }
             static Trigger* crusader_strike(PlayerbotAI* ai) { return new CrusaderStrikeTrigger(ai); }
+            static Trigger* zzoldholy_strike(PlayerbotAI* ai) { return new ZZOldHolyStrikeTrigger(ai); }
         };
 
         class AiObjectContextInternal : public NamedObjectContext<Action>
@@ -542,6 +544,7 @@ namespace ai
                 creators["divine storm"] = &AiObjectContextInternal::divine_storm;
                 creators["redemption"] = &AiObjectContextInternal::redemption;
                 creators["crusader strike"] = &AiObjectContextInternal::crusader_strike;
+                creators["zzoldholy strike"] = &AiObjectContextInternal::zzoldholy_strike;
                 creators["retribution aura"] = &AiObjectContextInternal::retribution_aura;
                 creators["shadow resistance aura"] = &AiObjectContextInternal::shadow_resistance_aura;
                 creators["fire resistance aura"] = &AiObjectContextInternal::fire_resistance_aura;
@@ -656,6 +659,7 @@ namespace ai
             static Action* divine_storm(PlayerbotAI* ai) { return new CastDivineStormAction(ai); }
             static Action* redemption(PlayerbotAI* ai) { return new CastRedemptionAction(ai); }
             static Action* crusader_strike(PlayerbotAI* ai) { return new CastCrusaderStrikeAction(ai); }
+            static Action* zzoldholy_strike(PlayerbotAI* ai) { return new CastZZOldHolyStrikeAction(ai); }
             static Action* seal_of_light(PlayerbotAI* ai) { return new CastSealOfLightAction(ai); }
             static Action* paladin_aura(PlayerbotAI* ai) { return new CastPaladinAuraAction(ai); }
             static Action* devotion_aura(PlayerbotAI* ai) { return new CastDevotionAuraAction(ai); }

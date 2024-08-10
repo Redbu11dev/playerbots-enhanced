@@ -50,6 +50,8 @@ namespace ai
 
     CD_TRIGGER(CrusaderStrikeTrigger, "crusader strike");
 
+    CD_TRIGGER(ZZOldHolyStrikeTrigger, "zzoldholy strike");
+
     // repentance triggers
     INTERRUPT_HEALER_TRIGGER(RepentanceOnHealerTrigger, "repentance on enemy healer");
     SNARE_TRIGGER(RepentanceSnareTrigger, "repentance on snare target");
