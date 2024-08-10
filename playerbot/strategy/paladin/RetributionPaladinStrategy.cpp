@@ -14,6 +14,7 @@ public:
         creators["seal of vengeance"] = &seal_of_vengeance;
         creators["seal of command"] = &seal_of_command;
         creators["crusader strike"] = &crusader_strike;
+        creators["zzoldholy strike"] = &zzoldholy_strike;
         creators["repentance"] = &repentance;
         creators["repentance on enemy healer"] = &repentance_on_enemy_healer;
         creators["repentance on snare target"] = &repentance_on_snare_target;
@@ -27,6 +28,8 @@ private:
     ACTION_NODE_A(seal_of_command, "seal of command", "seal of righteousness");
 
     ACTION_NODE_A(crusader_strike, "crusader strike", "melee");
+
+    ACTION_NODE_A(zzoldholy_strike, "zzoldholy strike", "melee");
 
     ACTION_NODE_A(repentance, "repentance", "hammer of justice");
 
@@ -61,12 +64,12 @@ void RetributionPaladinStrategy::InitCombatTriggers(std::list<TriggerNode*>& tri
 
     triggers.push_back(new TriggerNode(
         "critical health",
-        NextAction::array(0, new NextAction("repentance or shield", ACTION_EMERGENCY + 1), 
+        NextAction::array(0, new NextAction("repentance or shield", ACTION_EMERGENCY + 1),
                              new NextAction("holy light", ACTION_EMERGENCY), NULL)));
 
     triggers.push_back(new TriggerNode(
         "critical health",
-        NextAction::array(0, new NextAction("divine shield", ACTION_EMERGENCY + 1), 
+        NextAction::array(0, new NextAction("divine shield", ACTION_EMERGENCY + 1),
                              new NextAction("holy light", ACTION_EMERGENCY), NULL)));
 
     triggers.push_back(new TriggerNode(
@@ -96,6 +99,10 @@ void RetributionPaladinStrategy::InitCombatTriggers(std::list<TriggerNode*>& tri
     triggers.push_back(new TriggerNode(
         "crusader strike",
         NextAction::array(0, new NextAction("crusader strike", ACTION_NORMAL), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "zzoldholy strike",
+        NextAction::array(0, new NextAction("zzoldholy strike", ACTION_NORMAL), NULL)));
 }
 
 void RetributionPaladinStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)

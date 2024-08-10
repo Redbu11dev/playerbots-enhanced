@@ -63,6 +63,12 @@ namespace ai
 		CastCrusaderStrikeAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "crusader strike") {}
 	};
 
+    class CastZZOldHolyStrikeAction : public CastMeleeSpellAction
+    {
+    public:
+        CastZZOldHolyStrikeAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "zzoldholy strike") {}
+    };
+
     class CastSealSpellAction : public CastBuffSpellAction
     {
     public:
