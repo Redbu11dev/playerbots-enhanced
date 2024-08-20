@@ -65,6 +65,15 @@ bool PossibleRpgTargetsValue::AcceptUnit(Unit* unit)
     if (sServerFacade.GetDistance2d(bot, unit) <= sPlayerbotAIConfig.tooCloseDistance)
         return false;
 
+    if (unit && unit->IsCreature())
+    {
+        Creature* creature = ai->GetCreature(unit->GetObjectGuid());
+
+        //ignore "unseen" npc
+        if (creature && creature->GetCreatureInfo()->Entry == 3094)
+            return false;
+    }
+
 	if (unit->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_SPIRITHEALER))
 		return false;
 

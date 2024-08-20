@@ -3222,11 +3222,11 @@ void RandomPlayerbotMgr::OnPlayerLogin(Player* player)
         }
         else
         {
-            std::vector<TravelDestination*> dests = sTravelMgr.getRpgTravelDestinations(player, true, true, 200000.0f);
+            std::vector<RpgTravelDestination*> dests = sTravelMgr.getRpgTravelDestinations(player, true, true, 200000.0f);
 
             do
             {
-                RpgTravelDestination* dest = (RpgTravelDestination*)dests[urand(0, dests.size() - 1)];
+                RpgTravelDestination* dest = dests[urand(0, dests.size() - 1)];
                 CreatureInfo const* cInfo = dest->getCreatureInfo();
                 if (!cInfo)
                     continue;
@@ -3614,7 +3614,7 @@ void RandomPlayerbotMgr::RandomTeleportForRpg(Player* bot, bool activeOnly)
         AiObjectContext* context = bot->GetPlayerbotAI()->GetAiObjectContext();
         TravelTarget* travelTarget = AI_VALUE(TravelTarget*, "travel target");
 
-        travelTarget->setTarget(sTravelMgr.nullTravelDestination, sTravelMgr.nullWorldPosition, true);
+        travelTarget->setTarget(sTravelMgr.nullTravelDestination, new WorldPosition(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ()), true);
         travelTarget->setStatus(TravelStatus::TRAVEL_STATUS_COOLDOWN);
         travelTarget->setExpireIn(10 * MINUTE * IN_MILLISECONDS);
     }

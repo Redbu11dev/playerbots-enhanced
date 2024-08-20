@@ -38,200 +38,214 @@ bool ChooseTravelTargetAction::Execute(Event& event)
 //Eventually we want to rewrite this to be more intelligent.
 void ChooseTravelTargetAction::getNewTarget(Player* requester, TravelTarget* newTarget, TravelTarget* oldTarget)
 {
-    bool foundTarget = false;
+    bool foundTarget = SetGroupTarget(requester, newTarget); //Join groups members
 
-    foundTarget = SetGroupTarget(requester, newTarget);                                 //Join groups members
-
-    //Empty bags/repair
-    if (!foundTarget && urand(1, 100) > 10)                                  //90% chance
-    {
-        bool shouldRpg = false;
-        if (AI_VALUE2(bool, "group or", "should sell,can sell,following party,near leader")) //One of party members wants to sell items (full bags).
-        {
-            ai->TellDebug(requester, "Group needs to sell items (full bags)", "debug travel");
-            shouldRpg = true;
-        }
-        else if (AI_VALUE2(bool, "group or", "should repair,can repair,following party,near leader")) //One of party members wants to repair.
-        {
-            ai->TellDebug(requester, "Group needs to repair", "debug travel");
-            shouldRpg = true;
-        }
-        else if (AI_VALUE2(bool, "group or", "should sell,can ah sell,following party,near leader") && bot->GetLevel() > 5) //One of party members wants to sell items to AH (full bags).
-        {
-            ai->TellDebug(requester, "Group needs to ah items (full bags)", "debug travel");
-            shouldRpg = true;
-        }
-        else if (!shouldRpg && ai->HasStrategy("free", BotState::BOT_STATE_NON_COMBAT))
-        {
-            if (AI_VALUE(bool, "should sell") && (AI_VALUE(bool, "can sell") || AI_VALUE(bool, "can ah sell"))) //Bot wants to sell (full bags).
-            {
-                ai->TellDebug(requester, "Bot needs to sell/ah items (full bags)", "debug travel");
-                shouldRpg = true;                
-            }
-            else if (AI_VALUE(bool, "should repair") && AI_VALUE(bool, "can repair")) //Bot wants to repair.
-            {
-                ai->TellDebug(requester, "Bot needs to repair", "debug travel");
-                shouldRpg = true;
-            }
-        }
-                     
-        if (shouldRpg)
-        {
-            PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetRpgTarget1", &context->performanceStack);
-            foundTarget = SetRpgTarget(requester, newTarget);                           //Go to town to sell items or repair
-            if (pmo) pmo->finish();
-        }
-    }
+    bool isOldTargetExpired = oldTarget->getStatus() == TravelStatus::TRAVEL_STATUS_EXPIRED;
 
     WorldPosition botPos(bot);
 
-    //Rpg in city
-    if (!foundTarget && urand(1, 100) > 90 && bot->GetLevel() > 5 && botPos.isOverworld())           //10% chance if not currenlty in dungeon.
-    {
-        ai->TellDebug(requester, "Random rpg in city", "debug travel");
-        PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetNpcFlagTarget2", &context->performanceStack);
-        foundTarget = SetNpcFlagTarget(requester, newTarget, { UNIT_NPC_FLAG_BANKER,UNIT_NPC_FLAG_BATTLEMASTER,UNIT_NPC_FLAG_AUCTIONEER });
-        if(pmo) pmo->finish();
-    }
+    uint32 botMaxLevel = sPlayerbotAIConfig.randomBotMaxLevel;
 
-    // PvP activities
-    bool pvpActivate = false;
-    if (pvpActivate && !foundTarget && urand(0, 4) && bot->GetLevel() > 50)
-    {
-        ai->TellDebug(requester, "Pvp in Tarren Mill", "debug travel");
-        WorldPosition pos = WorldPosition(bot);
-        WorldPosition* botPos = &pos;
-        TravelTarget* target = context->GetValue<TravelTarget*>("travel target")->Get();
+    uint8 maxRetries = 3;
 
-        TravelDestination* dest = ChooseTravelTargetAction::FindDestination(bot, "Tarren Mill");
-        if (dest)
+    //loop few times to try to find target
+    for (uint8 retry = 1; retry < maxRetries; ++retry)
+    {
+        //Continue current target.
+        if (!foundTarget && isOldTargetExpired && (!botPos.isOverworld() || urand(1, 100) <= 90))        //90% chance or currently in dungeon.
         {
-            std::vector<WorldPosition*> points = dest->nextPoint(botPos, true);
-
-            if (!points.empty())
-            {
-                target->setTarget(dest, points.front());
-                target->setForced(true);
-
-                std::ostringstream out; out << "Traveling to " << dest->getTitle();
-                ai->TellPlayerNoFacing(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
-                foundTarget = true;
-            }
-        }
-    }
-
-    //Grind for money (if not in dungeon)
-    if (!foundTarget && AI_VALUE(bool, "should get money") && botPos.isOverworld())
-    {
-        //Empty mail for money
-        if (AI_VALUE(bool, "can get mail"))
-        {
-            ai->TellDebug(requester, "Get mail for money", "debug travel");
-            PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetGoTarget1", &context->performanceStack);
-            foundTarget = SetGOTypeTarget(requester, newTarget, GAMEOBJECT_TYPE_MAILBOX,"",false);  //Find a mailbox
+            ai->TellDebug(requester, "Continue previous target", "debug travel");
+            PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetCurrentTarget", &context->performanceStack);
+            foundTarget = SetCurrentTarget(requester, newTarget, oldTarget);             //Extend current target.
             if (pmo) pmo->finish();
         }
 
-        if (!foundTarget)
+        //no need to recheck again, as it is not chance based
+        if (retry == 1)
         {
-            if (urand(1, 100) > 50) //50% Focus on active quests for money.
+            //Empty bags/repair
+            bool shouldRpg = false;
+            if (AI_VALUE2(bool, "group or", "should sell,can sell,following party,near leader")) //One of party members wants to sell items (full bags).
             {
+                ai->TellDebug(requester, "Group needs to sell items (full bags)", "debug travel");
+                shouldRpg = true;
+            }
+            else if (AI_VALUE2(bool, "group or", "should repair,can repair,following party,near leader")) //One of party members wants to repair.
+            {
+                ai->TellDebug(requester, "Group needs to repair", "debug travel");
+                shouldRpg = true;
+            }
+            else if (AI_VALUE2(bool, "group or", "should sell,can ah sell,following party,near leader") && bot->GetLevel() > 5) //One of party members wants to sell items to AH (full bags).
+            {
+                ai->TellDebug(requester, "Group needs to ah items (full bags)", "debug travel");
+                shouldRpg = true;
+            }
+            else if (!shouldRpg && ai->HasStrategy("free", BotState::BOT_STATE_NON_COMBAT))
+            {
+                if (AI_VALUE(bool, "should sell") && (AI_VALUE(bool, "can sell") || AI_VALUE(bool, "can ah sell"))) //Bot wants to sell (full bags).
+                {
+                    ai->TellDebug(requester, "Bot needs to sell/ah items (full bags)", "debug travel");
+                    shouldRpg = true;
+                }
+                else if (AI_VALUE(bool, "should repair") && AI_VALUE(bool, "can repair")) //Bot wants to repair.
+                {
+                    ai->TellDebug(requester, "Bot needs to repair", "debug travel");
+                    shouldRpg = true;
+                }
+            }
+
+            if (shouldRpg)
+            {
+                PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetRpgTarget1", &context->performanceStack);
+                foundTarget = SetRpgTarget(requester, newTarget, true);                           //Go to town to sell items or repair
+                if (pmo) pmo->finish();
+            }
+        }
+
+        //Do quests (start, do, end)
+        //95% chance or 100% chance on last retry if bot is not max level
+        uint8 doQuestsChance = bot->GetLevel() < botMaxLevel ? 95 : 30; //can finally relax a bit from questing at max level
+        if (!foundTarget && ((retry == maxRetries && bot->GetLevel() < botMaxLevel) || urand(1, 100) <= doQuestsChance))
+        {
+            ai->TellDebug(requester, "Do questing", "debug travel");
+            PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetQuestTarget", &context->performanceStack);
+            foundTarget = SetQuestTarget(requester, newTarget, true, true, true);    //Do any nearby
+            if (pmo) pmo->finish();
+        }
+
+        //Grind for money (if not in dungeon)
+        if (!foundTarget && AI_VALUE(bool, "should get money") && botPos.isOverworld())
+        {
+            //Empty mail for money
+            if (AI_VALUE(bool, "can get mail"))
+            {
+                ai->TellDebug(requester, "Get mail for money", "debug travel");
+                PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetGoTarget1", &context->performanceStack);
+                foundTarget = SetGOTypeTarget(requester, newTarget, GAMEOBJECT_TYPE_MAILBOX, "", false);  //Find a mailbox
+                if (pmo) pmo->finish();
+            }
+
+            if (!foundTarget)
+            {
+                if (urand(1, 100) > 50) //50% Focus on active quests for money.
                 {
                     ai->TellDebug(requester, "Turn in quests for money", "debug travel");
                     PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetQuestTarget1", &context->performanceStack);
                     foundTarget = SetQuestTarget(requester, newTarget, false, true, true);           //Turn in quests for money.
                     if (pmo) pmo->finish();
-                }
 
-                if (!foundTarget)
+                    if (!foundTarget)
+                    {
+                        ai->TellDebug(requester, "Start quests for money", "debug travel");
+                        PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetQuestTarget2", &context->performanceStack);
+                        foundTarget = SetQuestTarget(requester, newTarget, true, false, false);      //Find new (low) level quests
+                        if (pmo) pmo->finish();
+                    }
+                }
+                else if (bot->GetLevel() >= botMaxLevel)
                 {
-                    ai->TellDebug(requester, "Start quests for money", "debug travel");
-                    PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetQuestTarget2", &context->performanceStack);
-                    foundTarget = SetQuestTarget(requester, newTarget, true, false, false);      //Find new (low) level quests
+                    ai->TellDebug(requester, "Grind mobs for money", "debug travel");
+                    PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetGrindTarget1", &context->performanceStack);
+                    foundTarget = SetGrindTarget(requester, newTarget);                               //Go grind mobs for money
                     if (pmo) pmo->finish();
                 }
             }
-            else
+        }
+
+        //Get mail
+        if (!foundTarget && urand(1, 100) > 70)                                  //30% chance
+        {
+            if (AI_VALUE(bool, "can get mail"))
             {
-                ai->TellDebug(requester, "Grind mobs for money", "debug travel");
-                PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetGrindTarget1", &context->performanceStack);
-                foundTarget = SetGrindTarget(requester, newTarget);                               //Go grind mobs for money    
+                ai->TellDebug(requester, "Get mail", "debug travel");
+                PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetGoTarget2", &context->performanceStack);
+                foundTarget = SetGOTypeTarget(requester, newTarget, GAMEOBJECT_TYPE_MAILBOX, "", false);  //Find a mailbox
                 if (pmo) pmo->finish();
             }
         }
-    }
 
-
-    //Continue current target.
-    if (!foundTarget && (!botPos.isOverworld() || urand(1, 100) > 10))        //90% chance or currently in dungeon.
-    {
-        ai->TellDebug(requester, "Continue previous target", "debug travel");
-        PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetCurrentTarget", &context->performanceStack);
-        foundTarget = SetCurrentTarget(requester, newTarget, oldTarget);             //Extend current target.
-        if(pmo) pmo->finish();
-    }
-
-    //Get mail
-    if (!foundTarget && urand(1, 100) > 70)                                  //30% chance
-    {
-        if (AI_VALUE(bool, "can get mail"))
+        //Rpg in city
+        if (false && !foundTarget && urand(1, 100) > 90 && bot->GetLevel() > 5 && botPos.isOverworld())           //10% chance if not currenlty in dungeon.
         {
-            ai->TellDebug(requester, "Get mail", "debug travel");
-            PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetGoTarget2", &context->performanceStack);
-            foundTarget = SetGOTypeTarget(requester, newTarget, GAMEOBJECT_TYPE_MAILBOX, "", false);  //Find a mailbox
+            ai->TellDebug(requester, "Random rpg in city", "debug travel");
+            PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetNpcFlagTarget2", &context->performanceStack);
+            foundTarget = SetNpcFlagTarget(requester, newTarget, { UNIT_NPC_FLAG_BANKER,UNIT_NPC_FLAG_BATTLEMASTER,UNIT_NPC_FLAG_AUCTIONEER });
             if (pmo) pmo->finish();
         }
-    }
 
-    //Dungeon in group.
-    if (!foundTarget && (!botPos.isOverworld() || urand(1, 100) > 50))      //50% chance or currently in instance.
-        if (AI_VALUE(bool, "can fight boss"))
+        //Just hang with an npc
+        if (false && !foundTarget && urand(1, 100) > 30)                                 //30% chance
         {
-            ai->TellDebug(requester, "Fight boss for loot", "debug travel");
-            PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetBossTarget", &context->performanceStack);
-            foundTarget = SetBossTarget(requester, newTarget);                         //Go fight a (dungeon boss)
-            if(pmo) pmo->finish();
+            {
+                ai->TellDebug(requester, "Rpg with random npcs", "debug travel");
+                PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetRpgTarget2", &context->performanceStack);
+                foundTarget = SetRpgTarget(requester, newTarget, false);
+                if (foundTarget)
+                    newTarget->setForced(true);
+                if (pmo) pmo->finish();
+            }
         }
 
-    //Do quests (start, do, end)
-    if (!foundTarget && urand(1, 100) > 5)                                 //95% chance
-    {
-        ai->TellDebug(requester, "Do questing", "debug travel");
-        PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetQuestTarget", &context->performanceStack);
-        foundTarget = SetQuestTarget(requester, newTarget, true, true, true);    //Do any nearby           
-        if(pmo) pmo->finish();
-    }
-
-    //Explore a nearby unexplored area.
-    if (!foundTarget && ai->HasStrategy("explore", BotState::BOT_STATE_NON_COMBAT) && urand(1, 100) > 90)  //10% chance Explore a unexplored sub-zone.
-    {
-        ai->TellDebug(requester, "Explore unexplored areas", "debug travel");
-        PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetExploreTarget", &context->performanceStack);
-        foundTarget = SetExploreTarget(requester, newTarget);
-        if(pmo) pmo->finish();
-    }
-
-    //Just hang with an npc
-    if (!foundTarget && urand(1, 100) > 50)                                 //50% chance
-    {
+        //Dungeon in group.
+        if (!foundTarget && (!botPos.isOverworld() || urand(1, 100) > 50))      //50% chance or currently in instance.
         {
-            ai->TellDebug(requester, "Rpg with random npcs", "debug travel");
-            PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetRpgTarget2", &context->performanceStack);
-            foundTarget = SetRpgTarget(requester, newTarget);
-            if (foundTarget)
-                newTarget->setForced(true);
-            if(pmo) pmo->finish();
+            if (AI_VALUE(bool, "can fight boss"))
+            {
+                ai->TellDebug(requester, "Fight boss for loot", "debug travel");
+                PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetBossTarget", &context->performanceStack);
+                foundTarget = SetBossTarget(requester, newTarget);                         //Go fight a (dungeon boss)
+                if (pmo) pmo->finish();
+            }
         }
+
+        //Explore a nearby unexplored area.
+        if (false && !foundTarget && ai->HasStrategy("explore", BotState::BOT_STATE_NON_COMBAT) && urand(1, 100) > 90)  //10% chance Explore a unexplored sub-zone.
+        {
+            ai->TellDebug(requester, "Explore unexplored areas", "debug travel");
+            PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetExploreTarget", &context->performanceStack);
+            foundTarget = SetExploreTarget(requester, newTarget);
+            if (pmo) pmo->finish();
+        }
+
+        // PvP activities
+        if (false && !foundTarget && urand(0, 4) && bot->GetLevel() >= botMaxLevel)
+        {
+            ai->TellDebug(requester, "Pvp in Tarren Mill", "debug travel");
+            WorldPosition pos = WorldPosition(bot);
+            WorldPosition* botPos = &pos;
+            TravelTarget* target = context->GetValue<TravelTarget*>("travel target")->Get();
+
+            TravelDestination* dest = ChooseTravelTargetAction::FindDestination(bot, "Tarren Mill");
+            if (dest)
+            {
+                std::vector<WorldPosition*> points = dest->nextPoint(botPos, true);
+
+                if (!points.empty())
+                {
+                    target->setTarget(dest, points.front());
+                    target->setForced(true);
+
+                    std::ostringstream out; out << "Traveling to " << dest->getTitle();
+                    ai->TellPlayerNoFacing(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+                    foundTarget = true;
+                }
+            }
+        }
+
+        //grind random mobs
+        if (!foundTarget && bot->GetLevel() >= botMaxLevel)
+        {
+            ai->TellDebug(requester, "Grind random mobs", "debug travel");
+            PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetGrindTarget2", &context->performanceStack);
+            foundTarget = SetGrindTarget(requester, newTarget);
+            if (pmo) pmo->finish();
+        }
+
+        if (foundTarget)
+            break;
     }
 
-    if (!foundTarget)
-    {
-        ai->TellDebug(requester, "Grind random mobs", "debug travel");
-        PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "SetGrindTarget2", &context->performanceStack);
-        foundTarget = SetGrindTarget(requester, newTarget);
-        if(pmo) pmo->finish();
-    }
-
+    // idle
     if (!foundTarget)
     {
         ai->TellDebug(requester, "Stop traveling", "debug travel");
@@ -251,7 +265,7 @@ void ChooseTravelTargetAction::setNewTarget(Player* requester, TravelTarget* new
     if(AI_VALUE2(bool, "can free move to", newTarget->GetPosStr()))
         ReportTravelTarget(requester, newTarget, oldTarget);
 
-    //If we are heading to a creature/npc clear it from the ignore list. 
+    //If we are heading to a creature/npc clear it from the ignore list.
     if (oldTarget && oldTarget == newTarget && newTarget->getEntry())
     {
         std::set<ObjectGuid>& ignoreList = context->GetValue<std::set<ObjectGuid>&>("ignore rpg target")->Get();
@@ -372,7 +386,7 @@ void ChooseTravelTargetAction::ReportTravelTarget(Player* requester, TravelTarge
                 out << "rpg";
         }
 
-        out << " to " << RpgDestination->getTitle();        
+        out << " to " << RpgDestination->getTitle();
     }
     else if (destination->getName() == "ExploreTravelDestination")
     {
@@ -564,12 +578,52 @@ void ChooseTravelTargetAction::ReportTravelTarget(Player* requester, TravelTarge
 }
 
 //Select only those points that are in sight distance or failing that a multiplication of the sight distance.
-std::vector<WorldPosition*> ChooseTravelTargetAction::getLogicalPoints(Player* requester, std::vector<WorldPosition*>& travelPoints)
+std::vector<WorldPosition*> ChooseTravelTargetAction::getLogicalPoints(Player* requester, std::vector<WorldPosition*>& travelPoints, float pMaxSearchDistance)
 {
     PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "getLogicalPoints", &context->performanceStack);
     std::vector<WorldPosition*> retvec;
 
-    static std::vector<float> distanceLimits = { sPlayerbotAIConfig.sightDistance, 4 * sPlayerbotAIConfig.sightDistance, 10 * sPlayerbotAIConfig.sightDistance, 20 * sPlayerbotAIConfig.sightDistance, 50 * sPlayerbotAIConfig.sightDistance, 100 * sPlayerbotAIConfig.sightDistance, 10000 * sPlayerbotAIConfig.sightDistance };
+    float initialSearchDistance = 60.0f;
+
+    //allow lesser values
+    if (pMaxSearchDistance < initialSearchDistance && pMaxSearchDistance > 0)
+    {
+        initialSearchDistance = pMaxSearchDistance;
+    }
+
+    float absoluteMaxSearchDistance = 600000.0f;
+
+    float maxSearchDisatance = pMaxSearchDistance > 0 ? pMaxSearchDistance : absoluteMaxSearchDistance;
+
+    const std::vector<float> possibleDistanceLimits = {
+        100.0f,
+        150.0f,
+        200.0f,
+        300.0f,
+        600.0f,
+        1200.0f,
+        3000.0f,
+        6000.0f,
+        absoluteMaxSearchDistance
+    };
+
+    std::vector<float> distanceLimits = {
+        initialSearchDistance
+    };
+
+    //insert distance limits
+    for (auto possibleDistanceLimit : possibleDistanceLimits)
+    {
+        if (possibleDistanceLimit <= maxSearchDisatance) {
+            distanceLimits.push_back(possibleDistanceLimit);
+        }
+    }
+
+    //insert max search distance
+    if (distanceLimits[distanceLimits.size() - 1] < maxSearchDisatance)
+    {
+        distanceLimits.push_back(maxSearchDisatance);
+    }
 
     std::vector<std::vector<WorldPosition*>> partitions;
 
@@ -608,7 +662,7 @@ std::vector<WorldPosition*> ChooseTravelTargetAction::getLogicalPoints(Player* r
     for (auto pos : travelPoints)
     {
         PerformanceMonitorOperation* pmo1 = sPerformanceMonitor.start(PERF_MON_VALUE, "AreaLevel", &context->performanceStack);
-        
+
         if (pos->getMapId() == bot->GetMapId())
         {
             int32 areaLevel = pos->getAreaLevel();
@@ -650,13 +704,13 @@ std::vector<WorldPosition*> ChooseTravelTargetAction::getLogicalPoints(Player* r
     }
 
     if (requester && centerLocation.fDist(bot) > 500.0f) //Try again with bot as center.
-        return getLogicalPoints(nullptr, travelPoints);
+        return getLogicalPoints(nullptr, travelPoints, maxSearchDisatance);
 
     return partitions.back();
 }
 
 //Sets the target to the best destination.
-bool ChooseTravelTargetAction::SetBestTarget(Player* requester, TravelTarget* target, std::vector<TravelDestination*>& TravelDestinations)
+bool ChooseTravelTargetAction::SetBestTarget(Player* requester, TravelTarget* target, std::vector<TravelDestination*>& TravelDestinations, float pMaxSearchDistance)
 {
     if (TravelDestinations.empty())
         return false;
@@ -685,11 +739,17 @@ bool ChooseTravelTargetAction::SetBestTarget(Player* requester, TravelTarget* ta
 
     if (TravelDestinations.size() == 1 && travelPoints.size() == 1)
     {
-        target->setTarget(TravelDestinations.front(), travelPoints.front());
-        return target->isActive();
+        auto travelPoint = travelPoints.front();
+
+        if (bot->GetLevel() >= (uint32)travelPoint->getAreaLevel()) {
+            target->setTarget(TravelDestinations.front(), travelPoint);
+            return target->isActive();
+        }
+
+        return false;
     }
 
-    travelPoints = getLogicalPoints(requester, travelPoints);
+    travelPoints = getLogicalPoints(requester, travelPoints, pMaxSearchDistance);
 
     if (travelPoints.empty())
         return false;
@@ -701,11 +761,19 @@ bool ChooseTravelTargetAction::SetBestTarget(Player* requester, TravelTarget* ta
     //Pick the best destination and point (random shuffle).
 
     for (auto destination : TravelDestinations) //Pick the destination that has this point.
+    {
         if (destination->hasPoint(travelPoints.front()))
         {
             TravelDestinations.front() = destination;
             break;
         }
+    }
+
+    if ((uint32)travelPoints.front()->getArea()->area_level > bot->GetLevel())
+    {
+        ai->TellDebug(requester, "Wanted to go to an area, but it is too high level");
+        return false;
+    }
 
     target->setTarget(TravelDestinations.front(), travelPoints.front());
 
@@ -772,7 +840,7 @@ bool ChooseTravelTargetAction::SetGroupTarget(Player* requester, TravelTarget* t
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
         ai->TellPlayerNoFacing(requester, std::to_string(activeDestinations.size()) + " group targets found.");
 
-    bool hasTarget = SetBestTarget(requester, target, activeDestinations);
+    bool hasTarget = SetBestTarget(requester, target, activeDestinations, 0);
 
     if (hasTarget)
         target->setGroupCopy();
@@ -795,9 +863,9 @@ bool ChooseTravelTargetAction::SetCurrentTarget(Player* requester, TravelTarget*
 
     std::vector<TravelDestination*> TravelDestinations = { oldDestination };
 
-    if (!SetBestTarget(requester, target, TravelDestinations))
+    if (!SetBestTarget(requester, target, TravelDestinations, 0))
         return false;
-   
+
     target->setStatus(TravelStatus::TRAVEL_STATUS_TRAVEL);
     target->setRetry(false, oldTarget->getRetryCount(false) + 1);
 
@@ -810,10 +878,13 @@ bool ChooseTravelTargetAction::SetQuestTarget(Player* requester, TravelTarget* t
 
     bool onlyClassQuest = !urand(0, 10);
 
+    uint32 initialQuestSearchDistance = 400 + bot->GetLevel() * 10;
+
     if (newQuests)
     {
         PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "getQuestTravelDestinations1", &context->performanceStack);
-        TravelDestinations = sTravelMgr.getQuestTravelDestinations(bot, -1, true, false, 400 + bot->GetLevel() * 10); //Prefer new quests near the player at lower levels.
+        //Prefer new quests near the player at lower levels.
+        TravelDestinations = sTravelMgr.getQuestTravelDestinations(bot, -1, false, false, initialQuestSearchDistance);
         if(pmo) pmo->finish();
     }
 
@@ -843,7 +914,7 @@ bool ChooseTravelTargetAction::SetQuestTarget(Player* requester, TravelTarget* t
 
             //Find quest takers or objectives
             PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "getQuestTravelDestinations2", &context->performanceStack);
-            std::vector<TravelDestination*> questDestinations = sTravelMgr.getQuestTravelDestinations(bot, questId, true, false,0);
+            std::vector<TravelDestination*> questDestinations = sTravelMgr.getQuestTravelDestinations(bot, questId, false, false, 0);
             if(pmo) pmo->finish();
 
             if (onlyClassQuest && TravelDestinations.size() && questDestinations.size()) //Only do class quests if we have any.
@@ -862,25 +933,54 @@ bool ChooseTravelTargetAction::SetQuestTarget(Player* requester, TravelTarget* t
     if (newQuests && TravelDestinations.empty())
     {
         PerformanceMonitorOperation* pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "getQuestTravelDestinations3", &context->performanceStack);
-        TravelDestinations = sTravelMgr.getQuestTravelDestinations(bot, -1, true, false); //If we really don't find any new quests look futher away.
+        uint8 maxQuestSearchRetries = 5;
+        for (uint8 retry = 1; retry < maxQuestSearchRetries; ++retry)
+        {
+            //If we really don't find any new quests look futher away.
+            //(much further, in case low levels have gotten themselves into higher level areas or generally in areas out of quests)
+            TravelDestinations = sTravelMgr.getQuestTravelDestinations(bot, -1, false, false, retry == maxQuestSearchRetries ? 0 : initialQuestSearchDistance * (retry + 1));
+        }
         if (pmo) pmo->finish();
     }
 
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
         ai->TellPlayerNoFacing(requester, std::to_string(TravelDestinations.size()) + " quest destinations found.");
 
-    return SetBestTarget(requester, target, TravelDestinations);
+    return SetBestTarget(requester, target, TravelDestinations, 0);
 }
 
-bool ChooseTravelTargetAction::SetRpgTarget(Player* requester, TravelTarget* target)
+//(RpgTravelDestination*)
+bool ChooseTravelTargetAction::SetRpgTarget(Player* requester, TravelTarget* target, bool requireLongDistanceSearch)
 {
     //Find rpg npcs
-    std::vector<TravelDestination*> TravelDestinations = sTravelMgr.getRpgTravelDestinations(bot, true, false);
+    std::vector<TravelDestination*> travelDestinations;
+
+    for (auto rpgDest : sTravelMgr.getRpgTravelDestinations(bot, true, false))
+    {
+        auto rpgDestCreatureInfo = rpgDest->getCreatureInfo();
+
+        if (!rpgDestCreatureInfo)
+            continue;
+
+        auto rpgDestCreatureReaction = ai->getReaction(sFactionTemplateStore.LookupEntry(rpgDestCreatureInfo->Faction));
+
+        if (rpgDestCreatureReaction < ReputationRank::REP_NEUTRAL)
+        {
+            continue;
+        }
+
+        travelDestinations.push_back(rpgDest);
+    }
 
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
-        ai->TellPlayerNoFacing(requester, std::to_string(TravelDestinations.size()) + " rpg destinations found.");
+        ai->TellPlayerNoFacing(requester, std::to_string(travelDestinations.size()) + " rpg destinations found.");
 
-    return SetBestTarget(requester, target, TravelDestinations);
+    if (!requireLongDistanceSearch)
+    {
+        return SetBestTarget(requester, target, travelDestinations, ai->IsInCapitalCity() ? 1000.0f : 75.0f);
+    }
+
+    return SetBestTarget(requester, target, travelDestinations, 0);
 }
 
 bool ChooseTravelTargetAction::SetGrindTarget(Player* requester, TravelTarget* target)
@@ -891,7 +991,7 @@ bool ChooseTravelTargetAction::SetGrindTarget(Player* requester, TravelTarget* t
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
         ai->TellPlayerNoFacing(requester, std::to_string(TravelDestinations.size()) + " grind destinations found.");
 
-    return SetBestTarget(requester, target, TravelDestinations);
+    return SetBestTarget(requester, target, TravelDestinations, 0);
 }
 
 bool ChooseTravelTargetAction::SetBossTarget(Player* requester, TravelTarget* target)
@@ -902,7 +1002,7 @@ bool ChooseTravelTargetAction::SetBossTarget(Player* requester, TravelTarget* ta
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
         ai->TellPlayerNoFacing(requester, std::to_string(TravelDestinations.size()) + " boss destinations found.");
 
-    return SetBestTarget(requester, target, TravelDestinations);
+    return SetBestTarget(requester, target, TravelDestinations, 0);
 }
 
 bool ChooseTravelTargetAction::SetExploreTarget(Player* requester, TravelTarget* target)
@@ -913,7 +1013,7 @@ bool ChooseTravelTargetAction::SetExploreTarget(Player* requester, TravelTarget*
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
         ai->TellPlayerNoFacing(requester, std::to_string(TravelDestinations.size()) + " explore destinations found.");
 
-    return SetBestTarget(requester, target, TravelDestinations);
+    return SetBestTarget(requester, target, TravelDestinations, bot->GetLevel() >= sPlayerbotAIConfig.randomBotMaxLevel ? 0 : 6000.0f);
 }
 
 char* strstri(const char* haystack, const char* needle);
@@ -961,7 +1061,7 @@ bool ChooseTravelTargetAction::SetNpcFlagTarget(Player* requester, TravelTarget*
 
             vItems = sObjectMgr.GetNpcVendorItemList(d->getEntry());
 
-//#ifndef MANGOSBOT_ZERO    
+//#ifndef MANGOSBOT_ZERO
             uint32 vendorId = cInfo->VendorTemplateId;
             if (vendorId)
                 tItems = sObjectMgr.GetNpcVendorTemplateItemList(vendorId);
@@ -970,7 +1070,7 @@ bool ChooseTravelTargetAction::SetNpcFlagTarget(Player* requester, TravelTarget*
             for (auto item : items)
             {
                 if (vItems && !vItems->Empty())
-                for(auto vitem : vItems->m_items) 
+                for(auto vitem : vItems->m_items)
                    if (vitem->item == item)
                     {
                         foundItem = true;
@@ -1002,7 +1102,7 @@ bool ChooseTravelTargetAction::SetNpcFlagTarget(Player* requester, TravelTarget*
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
         ai->TellPlayerNoFacing(requester, std::to_string(TravelDestinations.size()) + " npc flag targets found.");
 
-    bool isActive = SetBestTarget(requester, target, TravelDestinations);
+    bool isActive = SetBestTarget(requester, target, TravelDestinations, 0);
 
     if (!target->getDestination())
         return false;
@@ -1040,7 +1140,7 @@ bool ChooseTravelTargetAction::SetGOTypeTarget(Player* requester, TravelTarget* 
 
         //Check if the npc has (part of) the required name.
         if (!name.empty() && !strstri(gInfo->name, name.c_str()))
-            continue;        
+            continue;
 
         TravelDestinations.push_back(d);
     }
@@ -1048,7 +1148,7 @@ bool ChooseTravelTargetAction::SetGOTypeTarget(Player* requester, TravelTarget* 
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
         ai->TellPlayerNoFacing(requester, std::to_string(TravelDestinations.size()) + " go type targets found.");
 
-    bool isActive = SetBestTarget(requester, target, TravelDestinations);
+    bool isActive = SetBestTarget(requester, target, TravelDestinations, ai->IsInCapitalCity() ? 1000.0f : 150.0f);
 
     if (!target->getDestination())
         return false;
@@ -1065,7 +1165,8 @@ bool ChooseTravelTargetAction::SetGOTypeTarget(Player* requester, TravelTarget* 
 
 bool ChooseTravelTargetAction::SetNullTarget(TravelTarget* target)
 {
-    target->setTarget(sTravelMgr.nullTravelDestination, sTravelMgr.nullWorldPosition, true);
+    auto botPos = bot->GetPosition();
+    target->setTarget(sTravelMgr.nullTravelDestination, new WorldPosition(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ()), true);
     
     return true;
 }

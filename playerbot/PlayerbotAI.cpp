@@ -1182,7 +1182,11 @@ void PlayerbotAI::Reset(bool full)
         aiObjectContext->GetValue<LastMovement& >("last area trigger")->Get().Set(NULL);
         aiObjectContext->GetValue<LastMovement& >("last taxi")->Get().Set(NULL);
 
-        aiObjectContext->GetValue<TravelTarget* >("travel target")->Get()->setTarget(sTravelMgr.nullTravelDestination, sTravelMgr.nullWorldPosition, true);
+        aiObjectContext->GetValue<TravelTarget* >("travel target")->Get()->setTarget(
+            sTravelMgr.nullTravelDestination,
+            new WorldPosition(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ()),
+            true
+        );
         aiObjectContext->GetValue<TravelTarget* >("travel target")->Get()->setStatus(TravelStatus::TRAVEL_STATUS_EXPIRED);
         aiObjectContext->GetValue<TravelTarget* >("travel target")->Get()->setExpireIn(1000);
 
@@ -6660,9 +6664,6 @@ std::list<Item*> PlayerbotAI::InventoryParseItems(std::string text, IterateItems
         }
     }
 
-    FindNamedItemVisitor visitor(bot, text);
-    VISIT;
-
     uint32 quality = GetChatHelper()->parseItemQuality(text);
     if (quality != MAX_ITEM_QUALITY)
     {
@@ -6695,6 +6696,12 @@ std::list<Item*> PlayerbotAI::InventoryParseItems(std::string text, IterateItems
     if (!outfit.empty())
     {
         FindItemByIdsVisitor visitor(outfit);
+        VISIT;
+    }
+
+    if (found.size() == 0)
+    {
+        FindNamedItemVisitor visitor(bot, text);
         VISIT;
     }
 

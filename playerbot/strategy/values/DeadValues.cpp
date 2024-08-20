@@ -25,14 +25,6 @@ GuidPosition GraveyardValue::Calculate()
             refPosition = *travelTarget->getPosition();
         }
     }
-    else if (getQualifier() == "another closest appropriate")
-    {
-        //just get ANOTHER nearest appropriate for level (neutral or same team zone)
-        if (auto anotherAppropriate = GetAnotherAppropriateClosestGraveyard())
-        {
-            return GuidPosition(0, anotherAppropriate);
-        }
-    }
 
     WorldSafeLocsEntry const* ClosestGrave = bot->GetMap()->GetGraveyardManager().GetClosestGraveYard(
         refPosition.getX(),
@@ -57,69 +49,6 @@ GuidPosition GraveyardValue::Calculate()
     return GuidPosition(0, ClosestGrave);
 }
 
-WorldSafeLocsEntry const* GraveyardValue::GetAnotherAppropriateClosestGraveyard() const
-{
-    // near
-    bool foundNear = false;
-    float distNear = std::numeric_limits<float>::max();
-    WorldSafeLocsEntry const* entryNear = nullptr;
-
-    // far
-    WorldSafeLocsEntry const* entryFar = nullptr;
-
-    for (auto mapValues : sWorld.GetGraveyardManager().GetGraveyardMap())
-    {
-        uint32 locId = mapValues.first;
-        GraveYardData const& graveyardData = mapValues.second;
-
-        uint32 botMapId = bot->GetMapId();
-        uint32 botZoneId = bot->GetZoneId();
-
-        //skip non-neutral or hostile graveyards
-        if (graveyardData.team != bot->GetTeam() && graveyardData.team != TEAM_BOTH_ALLOWED)
-            continue;
-
-        WorldSafeLocsEntry const* graveyardCoreEntry = sWorldSafeLocsStore.LookupEntry<WorldSafeLocsEntry>(graveyardData.safeLocId);
-
-        //skip different maps (no need for other continents)
-        if (graveyardCoreEntry->map_id != botMapId)
-            continue;
-
-        uint32 graveyardZoneId = sTerrainMgr.GetZoneId(graveyardCoreEntry->map_id, graveyardCoreEntry->x, graveyardCoreEntry->y, graveyardCoreEntry->z);
-        auto graveyardAreaEntry = GetAreaEntryByAreaID(graveyardZoneId);
-
-        //skip same zone
-        if (graveyardZoneId == botZoneId)
-            continue;
-
-        //skip higher level zones
-        if (bot->GetLevel() + 5 < graveyardAreaEntry->area_level)
-            continue;
-
-        float dist2 = (graveyardCoreEntry->x - bot->GetPositionX()) * (graveyardCoreEntry->x - bot->GetPositionX()) + (graveyardCoreEntry->y - bot->GetPositionY()) * (graveyardCoreEntry->y - bot->GetPositionY()) + (graveyardCoreEntry->z - bot->GetPositionZ()) * (graveyardCoreEntry->z - bot->GetPositionZ());
-        if (foundNear)
-        {
-            if (dist2 < distNear)
-            {
-                distNear = dist2;
-                entryNear = graveyardCoreEntry;
-            }
-        }
-        else
-        {
-            foundNear = true;
-            distNear = dist2;
-            entryNear = graveyardCoreEntry;
-        }
-
-    }
-
-    if (entryNear)
-        return entryNear;
-
-    return entryFar;
-}
-
 GuidPosition BestGraveyardValue::Calculate()
 {
     Corpse* corpse = bot->GetCorpse();
@@ -136,23 +65,6 @@ GuidPosition BestGraveyardValue::Calculate()
     }
 
     uint32 deathCount = AI_VALUE(uint32, "death count");
-
-    //attempt to revive at other same map graveyards which are not enemy territory
-    if (!ai->HasActivePlayerMaster() && deathCount >= DEATH_COUNT_BEFORE_TRYING_ANOTHER_GRAVEYARD)
-    {
-        GuidPosition anotherGraveyard = AI_VALUE2(GuidPosition, "graveyard", "another closest appropriate");
-        if (anotherGraveyard)
-        {
-            return anotherGraveyard;
-        }
-        sLog.outBasic(
-            "ERROR: Unable to find another closest appropriate graveyard in BestGraveyardValue, resorting to self graveyard - bot #%d %s:%d <%s>",
-            bot->GetGUIDLow(),
-            bot->GetTeam() == ALLIANCE ? "A" : "H",
-            bot->GetLevel(),
-            bot->GetName()
-        );
-    }
 
     //Revive near master.
     if (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && ai->GetGroupMaster() && ai->GetGroupMaster() != bot)
