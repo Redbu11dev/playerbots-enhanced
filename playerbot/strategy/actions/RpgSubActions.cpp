@@ -21,13 +21,23 @@ void RpgHelper::BeforeExecute()
     setFacingTo(guidP());
 
     setFacing(guidP());
+
+    if (guidP().HasNpcFlag(UNIT_NPC_FLAG_QUESTGIVER))
+    {
+        /*if (ai->GetCurrentCompleteQuestIds().size() > 0)
+        {
+            ai->DoSpecificAction("talk to quest giver");
+        }*/
+        ai->DoSpecificAction("talk to quest giver");
+        ai->DoSpecificAction("accept all quests");
+    }
 }
 
 void RpgHelper::AfterExecute(bool doDelay, bool waitForGroup, std::string nextAction)
 {
-    if ((ai->HasRealPlayerMaster() || bot->GetGroup() || !urand(0,5)) && nextAction == "rpg") 
-        nextAction = "rpg cancel"; 
-    
+    if ((ai->HasRealPlayerMaster() || bot->GetGroup() || !urand(0,5)) && nextAction == "rpg")
+        nextAction = "rpg cancel";
+
     SET_AI_VALUE(std::string, "next rpg action", nextAction);
 
     if(doDelay)
@@ -92,7 +102,7 @@ void RpgHelper::resetFacing(GuidPosition guidPosition)
 void RpgHelper::setDelay(bool waitForGroup)
 {
     if ((!ai->HasRealPlayerMaster() && !bot->GetGroup()) || (bot->GetGroup() && bot->GetGroup()->IsLeader(bot->GetObjectGuid()) && waitForGroup))
-        ai->SetActionDuration(sPlayerbotAIConfig.rpgDelay);       
+        ai->SetActionDuration(sPlayerbotAIConfig.rpgDelay);
     else
         ai->SetActionDuration(sPlayerbotAIConfig.rpgDelay / 5);
 }
@@ -125,7 +135,7 @@ bool RpgEmoteAction::Execute(Event& event)
 
     if (type != TEXTEMOTE_CHICKEN)
         rpg->AfterExecute();
-    else if(unit && !bot->GetNPCIfCanInteractWith(rpg->guidP(), UNIT_NPC_FLAG_QUESTGIVER) && AI_VALUE(TravelTarget*, "travel target")->getEntry() == 620)
+    else if(unit && !bot->GetNPCIfCanInteractWith(rpg->guidP(), UNIT_NPC_FLAG_QUESTGIVER) && ai->GetTravelTarget()->getEntry() == 620)
         rpg->AfterExecute(true,false, "rpg emote");
 
     DoDelay();

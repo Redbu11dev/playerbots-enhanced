@@ -742,36 +742,6 @@ bool BroadcastHelper::BroadcastGuildGroupOrRaidInvite(
     return false;
 }
 
-bool BroadcastHelper::BroadcastSuggestInstance(
-    PlayerbotAI* ai,
-    std::vector<std::string>& allowedInstances,
-    Player* bot
-)
-{
-    if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceSuggestInstance)
-    {
-        std::map<std::string, std::string> placeholders;
-        placeholders["%my_role"] = ai->GetChatHelper()->formatClass(bot, AiFactory::GetPlayerSpecTab(bot));
-
-        std::ostringstream itemout;
-        //itemout << "|c00b000b0" << allowedInstances[urand(0, allowedInstances.size() - 1)] << "|r";
-        itemout << allowedInstances[urand(0, allowedInstances.size() - 1)];
-        placeholders["%instance_name"] = itemout.str();
-
-        placeholders["%my_class"] = ai->GetChatHelper()->formatClass(bot->getClass());
-        placeholders["%my_race"] = ai->GetChatHelper()->formatRace(bot->getRace());
-        placeholders["%my_level"] = std::to_string(bot->GetLevel());
-
-        return BroadcastToChannelWithGlobalChance(
-            ai,
-            BOT_TEXT2("suggest_instance", placeholders),
-            { {TO_LOOKING_FOR_GROUP, 50}, {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
-        );
-    }
-
-    return false;
-}
-
 bool BroadcastHelper::BroadcastSuggestQuest(
     PlayerbotAI* ai,
     std::vector<uint32>& quests,
@@ -796,68 +766,6 @@ bool BroadcastHelper::BroadcastSuggestQuest(
         return BroadcastToChannelWithGlobalChance(
             ai,
             BOT_TEXT2("suggest_quest", placeholders),
-            { {TO_LOOKING_FOR_GROUP, 50}, {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
-        );
-    }
-
-    return false;
-}
-
-bool BroadcastHelper::BroadcastSuggestGrindMaterials(
-    PlayerbotAI* ai,
-    std::string item,
-    Player* bot
-)
-{
-    if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceSuggestGrindMaterials)
-    {
-
-        std::map<std::string, std::string> placeholders;
-        placeholders["%my_role"] = ai->GetChatHelper()->formatClass(bot, AiFactory::GetPlayerSpecTab(bot));
-        placeholders["%category"] = item;
-
-        placeholders["%my_class"] = ai->GetChatHelper()->formatClass(bot->getClass());
-        placeholders["%my_race"] = ai->GetChatHelper()->formatRace(bot->getRace());
-        placeholders["%my_level"] = std::to_string(bot->GetLevel());
-
-        return BroadcastToChannelWithGlobalChance(
-            ai,
-            BOT_TEXT2("suggest_trade", placeholders),
-            { {TO_TRADE, 50}, {TO_LOOKING_FOR_GROUP, 50}, {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
-        );
-    }
-
-    return false;
-}
-
-bool BroadcastHelper::BroadcastSuggestGrindReputation(
-    PlayerbotAI* ai,
-    std::vector<std::string> levels,
-    std::vector<std::string> allowedFactions,
-    Player* bot
-)
-{
-    if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceSuggestGrindReputation)
-    {
-
-        std::map<std::string, std::string> placeholders;
-        placeholders["%my_role"] = ai->GetChatHelper()->formatClass(bot, AiFactory::GetPlayerSpecTab(bot));
-        placeholders["%rep_level"] = levels[urand(0, 2)];
-        std::ostringstream rnd; rnd << urand(1, 5) << "K";
-        placeholders["%rndK"] = rnd.str();
-
-        std::ostringstream itemout;
-        //itemout << "|c004040b0" << allowedFactions[urand(0, allowedFactions.size() - 1)] << "|r";
-        itemout << allowedFactions[urand(0, allowedFactions.size() - 1)];
-        placeholders["%faction"] = itemout.str();
-
-        placeholders["%my_class"] = ai->GetChatHelper()->formatClass(bot->getClass());
-        placeholders["%my_race"] = ai->GetChatHelper()->formatRace(bot->getRace());
-        placeholders["%my_level"] = std::to_string(bot->GetLevel());
-
-        return BroadcastToChannelWithGlobalChance(
-            ai,
-            BOT_TEXT2("suggest_faction", placeholders),
             { {TO_LOOKING_FOR_GROUP, 50}, {TO_GUILD, 50}, {TO_WORLD, 50}, {TO_GENERAL, 100} }
         );
     }

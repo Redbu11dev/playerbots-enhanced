@@ -133,6 +133,8 @@ namespace ai
 
             SET_AI_VALUE(uint32, "death count", 0);
 
+            return true;
+
             if (bot->IsDead())
             {
                 bot->ResurrectPlayer(1.0f, false);
@@ -140,7 +142,7 @@ namespace ai
                 bot->SaveToDB();
             }
 
-            
+
             if (!ai->HasRealPlayerMaster())
             {
                 if (Group* group = bot->GetGroup())
@@ -159,10 +161,14 @@ namespace ai
             bot->SetSelectionGuid(ObjectGuid());
             ai->TellPlayer(requester, BOT_TEXT("hello"), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 
-            TravelTarget* travelTarget = AI_VALUE(TravelTarget*, "travel target");
-            travelTarget->setTarget(sTravelMgr.nullTravelDestination, sTravelMgr.nullWorldPosition, true);
-            travelTarget->setStatus(TravelStatus::TRAVEL_STATUS_EXPIRED);
-            travelTarget->setExpireIn(1000);
+            ai->SetTravelTarget(
+                sTravelMgr.nullTravelDestination,
+                sTravelMgr.nullWorldPosition,
+                true,
+                false,
+                TravelStatus::TRAVEL_STATUS_COOLDOWN,
+                60000
+            );
 
             PlayerInfo const* defaultPlayerInfo = sObjectMgr.GetPlayerInfo(bot->getRace(), bot->getClass());
             if (defaultPlayerInfo)

@@ -20,10 +20,7 @@ SuggestWhatToDoAction::SuggestWhatToDoAction(PlayerbotAI* ai, std::string name)
     if (_locale == 255)
         _locale = static_cast<int32>(LocaleConstant::LOCALE_enUS);
 
-    suggestions.push_back(&SuggestWhatToDoAction::instance);
     suggestions.push_back(&SuggestWhatToDoAction::specificQuest);
-    suggestions.push_back(&SuggestWhatToDoAction::grindMaterials);
-    suggestions.push_back(&SuggestWhatToDoAction::grindReputation);
     suggestions.push_back(&SuggestWhatToDoAction::something);
     suggestions.push_back(&SuggestWhatToDoAction::somethingToxic);
     suggestions.push_back(&SuggestWhatToDoAction::toxicLinks);
@@ -52,65 +49,6 @@ bool SuggestWhatToDoAction::Execute(Event& event)
     return true;
 }
 
-void SuggestWhatToDoAction::instance()
-{
-    if (instances.empty())
-    {
-        instances["Ragefire Chasm"] = 15;
-        instances["Deadmines"] = 18;
-        instances["Wailing Caverns"] = 18;
-        instances["Shadowfang Keep"] = 25;
-        instances["Blackfathom Deeps"] = 20;
-        instances["Stockade"] = 20;
-        instances["Gnomeregan"] = 35;
-        instances["Razorfen Kraul"] = 35;
-        instances["Maraudon"] = 50;
-        instances["Scarlet Monastery"] = 40;
-        instances["Uldaman"] = 45;
-        instances["Dire Maul"] = 58;
-        instances["Scholomance"] = 59;
-        instances["Razorfen Downs"] = 40;
-        instances["Stratholme"] = 59;
-        instances["Zul'Farrak"] = 45;
-        instances["Blackrock Depths"] = 55;
-        instances["Temple of Atal'Hakkar"] = 55;
-        instances["Lower Blackrock Spire"] = 57;
-
-        instances["Hellfire Citadel"] = 65;
-        instances["Coilfang Reservoir"] = 65;
-        instances["Auchindoun"] = 65;
-        instances["Cavens of Time"] = 68;
-        instances["Tempest Keep"] = 69;
-        instances["Magister's Terrace"] = 70;
-
-        instances["Utgarde Keep"] = 75;
-        instances["The Nexus"] = 75;
-        instances["Ahn'kahet: The Old Kingdom"] = 75;
-        instances["Azjol-Nerub"] = 75;
-        instances["Drak'Tharon Keep"] = 75;
-        instances["Violet Hold"] = 80;
-        instances["Gundrak"] = 77;
-        instances["Halls of Stone"] = 77;
-        instances["Halls of Lightning"] = 77;
-        instances["Oculus"] = 77;
-        instances["Utgarde Pinnacle"] = 77;
-        instances["Trial of the Champion"] = 80;
-        instances["Forge of Souls"] = 80;
-        instances["Pit of Saron"] = 80;
-        instances["Halls of Reflection"] = 80;
-    }
-
-    std::vector<std::string> allowedInstances;
-    for (std::map<std::string, int>::iterator i = instances.begin(); i != instances.end(); ++i)
-    {
-        if ((int)bot->GetLevel() >= i->second) allowedInstances.push_back(i->first);
-    }
-
-    if (allowedInstances.empty()) return;
-
-    BroadcastHelper::BroadcastSuggestInstance(ai, allowedInstances, bot);
-}
-
 std::vector<uint32> SuggestWhatToDoAction::GetIncompletedQuests()
 {
     std::vector<uint32> result;
@@ -136,86 +74,6 @@ void SuggestWhatToDoAction::specificQuest()
         return;
 
     BroadcastHelper::BroadcastSuggestQuest(ai, quests, bot);
-}
-
-void SuggestWhatToDoAction::grindMaterials()
-{
-    if (bot->GetLevel() <= 5)
-        return;
-
-    auto vec = ItemUsageValue::GetAllReagentItemIdsForCraftingSkillsVector();
-
-    if (vec.size() > 0)
-    {
-        uint32 randomItemId = vec[urand() % vec.size()];
-
-        const ItemPrototype* proto = ObjectMgr::GetItemPrototype(randomItemId);
-        if (proto)
-        {
-            BroadcastHelper::BroadcastSuggestGrindMaterials(ai, ai->GetChatHelper()->formatItem(proto), bot);
-        }
-    }
-
-    return;
-}
-
-void SuggestWhatToDoAction::grindReputation()
-{
-    if (factions.empty())
-    {
-        factions["Argent Dawn"] = 60;
-        factions["Bloodsail Buccaneers"] = 40;
-        factions["Brood of Nozdormu"] = 60;
-        factions["Cenarion Circle"] = 55;
-        factions["Darkmoon Faire"] = 20;
-        factions["Hydraxian Waterlords"] = 60;
-        factions["Ravenholdt"] = 20;
-        factions["Thorium Brotherhood"] = 40;
-        factions["Timbermaw Hold"] = 50;
-        factions["Wintersaber Trainers"] = 50;
-        factions["Booty Bay"] = 30;
-        factions["Everlook"] = 40;
-        factions["Gadgetzan"] = 50;
-        factions["Ratchet"] = 20;
-
-#ifndef MANGOSBOT_ZERO
-        factions["Ashtongue Deathsworn"] = 70;
-        factions["Cenarion Expedition"] = 62;
-        factions["The Consortium"] = 65;
-        factions["Honor Hold"] = 66;
-        factions["Keepers of Time"] = 68;
-        factions["Netherwing"] = 65;
-        factions["Ogri'la"] = 65;
-        factions["The Scale of the Sands"] = 65;
-        factions["Sporeggar"] = 65;
-        factions["Tranquillien"] = 10;
-        factions["The Violet Eye"] = 70;
-#endif
-
-#ifdef MANGOSBOT_TWO
-        factions["Argent Crusade"] = 75;
-        factions["Ashen Verdict"] = 75;
-        factions["The Kalu'ak"] = 72;
-        factions["Kirin Tor"] = 75;
-        factions["Knights of the Ebon Blade"] = 77;
-        factions["The Sons of Hodir"] = 78;
-        factions["The Wyrmrest Accord"] = 77;
-#endif
-    }
-
-    std::vector<std::string> levels;
-    levels.push_back("honored");
-    levels.push_back("revered");
-    levels.push_back("exalted");
-
-    std::vector<std::string> allowedFactions;
-    for (std::map<std::string, int>::iterator i = factions.begin(); i != factions.end(); ++i) {
-        if ((int)bot->GetLevel() >= i->second) allowedFactions.push_back(i->first);
-    }
-
-    if (allowedFactions.empty()) return;
-
-    BroadcastHelper::BroadcastSuggestGrindReputation(ai, levels, allowedFactions, bot);
 }
 
 void SuggestWhatToDoAction::something()

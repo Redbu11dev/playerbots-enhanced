@@ -265,6 +265,16 @@ namespace ai
             if (!sPlayerbotAIConfig.randomBotInvitePlayer && player->isRealPlayer())
                 continue;
 
+            //much lower chance to invite real player
+            if (player->isRealPlayer() && urand(0, 1000))
+                continue;
+
+            //much lower chance to invite if has no difficult quests
+            if (!ai->hasNotSoloableIncompleteQuests() && urand(0, 1000))
+                continue;
+
+            //TODO invite based on if have same quests?
+
             Group* group = bot->GetGroup();
 
             if (player->isDND())

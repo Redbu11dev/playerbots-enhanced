@@ -13,10 +13,7 @@ namespace ai
     protected:
         typedef void (SuggestWhatToDoAction::*Suggestion) ();
         std::vector<Suggestion> suggestions;
-        void instance();
         void specificQuest();
-        void grindMaterials();
-        void grindReputation();
         void something();
         void somethingToxic();
         void toxicLinks();

@@ -115,27 +115,63 @@ bool AcceptQuestShareAction::Execute(Event& event)
         bot->SetDividerGuid( ObjectGuid() );
     }
 
-    if( bot->CanAddQuest( qInfo, false ) )
+    return ConfirmQuestAction::ConfirmQuestForBot(requester, ai, qInfo, quest);
+
+//    if( bot->CanAddQuest( qInfo, false ) )
+//    {
+//        bot->AddQuest( qInfo, requester);
+//
+//        sPlayerbotAIConfig.logEvent(ai, "AcceptQuestShareAction", qInfo->GetTitle(), std::to_string(qInfo->GetQuestId()));
+//
+//        if( bot->CanCompleteQuest( quest ) )
+//            bot->CompleteQuest( quest );
+//
+//        // Runsttren: did not add typeid switch from WorldSession::HandleQuestgiverAcceptQuestOpcode!
+//        // I think it's not needed, cause typeid should be TYPEID_PLAYER - and this one is not handled
+//        // there and there is no default case also.
+//
+//        if( qInfo->GetSrcSpell() > 0 )
+//        {
+//            bot->CastSpell( bot, qInfo->GetSrcSpell(),
+//#ifdef MANGOS
+//                    true
+//#endif
+//#ifdef CMANGOS
+//                    (uint32)0
+//#endif
+//            );
+//        }
+//
+//        ai->TellPlayer(requester, BOT_TEXT("quest_accept"), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+//        return true;
+//    }
+//
+//    return false;
+}
+
+bool ConfirmQuestAction::ConfirmQuestForBot(Player* requester, PlayerbotAI* ai, Quest const* qInfo, uint32 quest)
+{
+    auto bot = ai->GetBot();
+
+    if (bot->CanAddQuest(qInfo, false))
     {
-        bot->AddQuest( qInfo, requester);
+        bot->AddQuest(qInfo, requester);
 
-        sPlayerbotAIConfig.logEvent(ai, "AcceptQuestShareAction", qInfo->GetTitle(), std::to_string(qInfo->GetQuestId()));
-
-        if( bot->CanCompleteQuest( quest ) )
-            bot->CompleteQuest( quest );
+        if (bot->CanCompleteQuest(quest))
+            bot->CompleteQuest(quest);
 
         // Runsttren: did not add typeid switch from WorldSession::HandleQuestgiverAcceptQuestOpcode!
         // I think it's not needed, cause typeid should be TYPEID_PLAYER - and this one is not handled
         // there and there is no default case also.
 
-        if( qInfo->GetSrcSpell() > 0 )
+        if (qInfo->GetSrcSpell() > 0)
         {
-            bot->CastSpell( bot, qInfo->GetSrcSpell(),
+            bot->CastSpell(bot, qInfo->GetSrcSpell(),
 #ifdef MANGOS
-                    true
+                true
 #endif
 #ifdef CMANGOS
-                    (uint32)0
+                (uint32)0
 #endif
             );
         }
@@ -157,37 +193,102 @@ bool ConfirmQuestAction::Execute(Event& event)
     uint32 quest;
     p >> quest;
     Quest const* qInfo = sObjectMgr.GetQuestTemplate(quest);
-
     quest = qInfo->GetQuestId();
-    if( !bot->CanTakeQuest( qInfo, false ) )
+
+    if (!bot->CanTakeQuest(qInfo, false))
     {
         // can't take quest
         ai->TellError(requester, BOT_TEXT("quest_cant_take"));
         return false;
     }
 
-    if( bot->CanAddQuest( qInfo, false ) )
+    return ConfirmQuestAction::ConfirmQuestForBot(requester, ai, qInfo, quest);
+
+//    if( !bot->CanTakeQuest( qInfo, false ) )
+//    {
+//        // can't take quest
+//        ai->TellError(requester, BOT_TEXT("quest_cant_take"));
+//        return false;
+//    }
+//
+//    if( bot->CanAddQuest( qInfo, false ) )
+//    {
+//        bot->AddQuest( qInfo, requester );
+//
+//        if( bot->CanCompleteQuest( quest ) )
+//            bot->CompleteQuest( quest );
+//
+//        if( qInfo->GetSrcSpell() > 0 )
+//        {
+//            bot->CastSpell( bot, qInfo->GetSrcSpell(),
+//#ifdef MANGOS
+//                    true
+//#endif
+//#ifdef CMANGOS
+//                    (uint32)0
+//#endif
+//            );
+//        }
+//
+//        ai->TellPlayer(requester, BOT_TEXT("quest_accept"), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+//        return true;
+//    }
+//
+//    return false;
+}
+
+bool QuestDetailsAction::Execute(Event& event)
+{
+    Player* bot = ai->GetBot();
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
+
+    WorldPacket& p = event.getPacket();
+    p.rpos(0);
+    ObjectGuid guid;
+    uint32 quest;
+    p >> guid;
+    p >> quest;
+    Quest const* qInfo = sObjectMgr.GetQuestTemplate(quest);
+    quest = qInfo->GetQuestId();
+
+    if (!bot->CanTakeQuest(qInfo, false))
     {
-        bot->AddQuest( qInfo, requester );
-
-        if( bot->CanCompleteQuest( quest ) )
-            bot->CompleteQuest( quest );
-
-        if( qInfo->GetSrcSpell() > 0 )
-        {
-            bot->CastSpell( bot, qInfo->GetSrcSpell(),
-#ifdef MANGOS
-                    true
-#endif
-#ifdef CMANGOS
-                    (uint32)0
-#endif
-            );
-        }
-
-        ai->TellPlayer(requester, BOT_TEXT("quest_accept"), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
-        return true;
+        // can't take quest
+        ai->TellError(requester, BOT_TEXT("quest_cant_take"));
+        return false;
     }
 
-    return false;
+    return ConfirmQuestAction::ConfirmQuestForBot(requester, ai, qInfo, quest);
+
+//    if (!bot->CanTakeQuest(qInfo, false))
+//    {
+//        // can't take quest
+//        ai->TellError(requester, BOT_TEXT("quest_cant_take"));
+//        return false;
+//    }
+//
+//    if (bot->CanAddQuest(qInfo, false))
+//    {
+//        bot->AddQuest(qInfo, requester);
+//
+//        if (bot->CanCompleteQuest(quest))
+//            bot->CompleteQuest(quest);
+//
+//        if (qInfo->GetSrcSpell() > 0)
+//        {
+//            bot->CastSpell(bot, qInfo->GetSrcSpell(),
+//#ifdef MANGOS
+//                true
+//#endif
+//#ifdef CMANGOS
+//                (uint32)0
+//#endif
+//            );
+//        }
+//
+//        ai->TellPlayer(requester, BOT_TEXT("quest_accept"), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+//        return true;
+//    }
+//
+//    return false;
 }

@@ -60,7 +60,7 @@ int ListQuestsAction::ListQuests(Player* requester, bool completed, bool silent,
     WorldPosition botPos(bot);
     
     if (travelDetail != QUEST_TRAVEL_DETAIL_NONE)
-        target = context->GetValue<TravelTarget*>("travel target")->Get();
+        target = ai->GetTravelTarget();
 
     int count = 0;
     for (uint16 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
@@ -83,7 +83,9 @@ int ListQuestsAction::ListQuests(Player* requester, bool completed, bool silent,
 
         if (travelDetail != QUEST_TRAVEL_DETAIL_NONE && target->getDestination())
         {
-            if (target->getDestination()->getName() == "QuestRelationTravelDestination" || target->getDestination()->getName() == "QuestObjectiveTravelDestination")
+            if (target->getDestination()->getName() == "QuestGiverTravelDestination"
+                || target->getDestination()->getName() == "QuestTakerTravelDestination"
+                || target->getDestination()->getName() == "QuestObjectiveTravelDestination")
             {
                 QuestTravelDestination* QuestDestination = (QuestTravelDestination*)target->getDestination();
 

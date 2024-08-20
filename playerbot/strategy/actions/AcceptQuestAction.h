@@ -32,5 +32,12 @@ namespace ai
     public:
         ConfirmQuestAction(PlayerbotAI* ai) : Action(ai, "confirm quest") {}
         virtual bool Execute(Event& event);
+        static bool ConfirmQuestForBot(Player* requester, PlayerbotAI* ai, Quest const* qInfo, uint32 quest);
+    };
+
+    class QuestDetailsAction : public Action {
+    public:
+        QuestDetailsAction(PlayerbotAI* ai) : Action(ai, "quest details") {}
+        virtual bool Execute(Event& event);
     };
 }

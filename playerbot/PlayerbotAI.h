@@ -12,6 +12,7 @@
 #include <stack>
 #include "strategy/IterateItemsMask.h"
 #include "RandomPlayerbotMgr.h"
+#include "playerbot/TravelMgr.h"
 
 class Player;
 class PlayerbotMgr;
@@ -377,17 +378,41 @@ public:
     static GameObject* GetGameObject(GameObjectDataPair const* gameObjectDataPair);
     WorldObject* GetWorldObject(ObjectGuid guid);
     std::vector<Player*> GetPlayersInGroup();
+
+    TravelTarget* GetTravelTarget();
+    void SetTravelTarget(
+        TravelDestination* travelDestination,
+        WorldPosition* travelPosition,
+        bool groupCopy,
+        bool forced,
+        TravelStatus travelStatus,
+        uint32 expirationTimeMs
+    );
+
     void DropQuest(uint32 questId);
     std::vector<const Quest*> GetAllCurrentQuests();
     std::vector<const Quest*> GetCurrentIncompleteQuests();
     std::set<uint32> GetAllCurrentQuestIds();
     std::set<uint32> GetCurrentIncompleteQuestIds();
+    std::set<uint32> GetCurrentCompleteQuestIds();
+    std::set<uint32> GetCurrentFailedQuestIds();
     const Quest* GetCurrentIncompleteQuestWithId(uint32 questId);
     bool HasCurrentIncompleteQuestWithId(uint32 questId);
     std::vector<std::pair<const Quest*, uint32>> GetCurrentQuestsRequiringItemId(uint32 itemId);
+    bool HasQuestInQuestLog(uint32 questId);
+    bool HasIncompleteNotFailedQuestInQuestLog(uint32 questId);
+    bool HasCompleteQuestInQuestLog(uint32 questId);
+    bool IsQuestItemOrCreatureOrGoObjectiveFulfilled(uint32 questId, uint32 objective);
+    bool hasNotSoloableIncompleteQuests();
     const AreaTableEntry* GetCurrentArea();
     const AreaTableEntry* GetCurrentZone();
+    const uint32 GetCurrentAreaId();
+    const uint32 GetCurrentZoneId();
+    const uint32 GetCurrentMapId();
     std::string GetLocalizedAreaName(const AreaTableEntry* entry);
+    WorldPosition GetSpawnPositionRef();
+    WorldPosition GetCurrentWorldPositionRef();
+    bool IsInHigherLevelArea();
     bool IsInCapitalCity();
     ChatChannelSource GetChatChannelSource(Player* bot, uint32 type, std::string channelName);
     bool SayToGuild(std::string msg);
@@ -507,6 +532,7 @@ public:
     void AccelerateRespawn(Creature* creature, float accelMod = 0);
     void AccelerateRespawn(ObjectGuid guid, float accelMod = 0) { Creature* creature = GetCreature(guid); if (creature) AccelerateRespawn(creature,accelMod); }
 
+    std::list<Creature*> GetAllCreaturesAround(float distanceAround);
     std::list<Unit*> GetAllHostileUnitsAroundWO(WorldObject* wo, float distanceAround);
     std::list<Unit*> GetAllHostileNPCNonPetUnitsAroundWO(WorldObject* wo, float distanceAround);
 
@@ -524,7 +550,7 @@ public:
 
 private:
     void InventoryIterateItemsInBags(IterateItemsVisitor* visitor);
-    void InventoryIterateItemsInEquip(IterateItemsVisitor* visitor);   
+    void InventoryIterateItemsInEquip(IterateItemsVisitor* visitor);
     void InventoryIterateItemsInBank(IterateItemsVisitor* visitor);
     void InventoryIterateItemsInBuyBack(IterateItemsVisitor* visitor);
 
@@ -541,7 +567,7 @@ public:
     bool IsRealPlayer(Unit* unit) { return unit->IsPlayer() && ((Player*)unit)->GetSession()->GetRemoteAddress() != "disconnected/bot"; }
     bool IsSelfMaster() { return master ? (master == bot) : false; }
     //Bot has a master that is a player.
-    bool HasRealPlayerMaster() { return master && (!master->GetPlayerbotAI() || master->GetPlayerbotAI()->IsRealPlayer()); } 
+    bool HasRealPlayerMaster() { return master && (!master->GetPlayerbotAI() || master->GetPlayerbotAI()->IsRealPlayer()); }
     //Bot has a master that is actively playing.
     bool HasActivePlayerMaster() { return master && !master->GetPlayerbotAI(); }
     //Checks if the bot is summoned as alt of a player
@@ -554,7 +580,7 @@ public:
     bool IsSafe(WorldObject* obj) { return obj && obj->GetMapId() == bot->GetMapId() && obj->GetInstanceId() == bot->GetInstanceId() && (!obj->IsPlayer() || !((Player*)obj)->IsBeingTeleported()); }
 
     //Returns a semi-random (cycling) number that is fixed for each bot.
-    uint32 GetFixedBotNumer(BotTypeNumber typeNumber, uint32 maxNum = 100, float cyclePerMin = 1); 
+    uint32 GetFixedBotNumer(BotTypeNumber typeNumber, uint32 maxNum = 100, float cyclePerMin = 1);
 
     GrouperType GetGrouperType();
     GuilderType GetGuilderType();
@@ -600,7 +626,7 @@ public:
     void OnCombatEnded();
     void OnDeath();
     void OnResurrected();
-    
+
     void SetActionDuration(const Action* action);
     void SetActionDuration(uint32 duration);
 
@@ -631,6 +657,8 @@ public:
 private:
     bool UpdateAIReaction(uint32 elapsed, bool minimal, bool isStunned);
     void UpdateFaceTarget(uint32 elapsed, bool minimal);
+    WorldPosition m_worldPositionStore;
+    WorldPosition m_spawnPositionStore;
 
 protected:
 	Player* bot;

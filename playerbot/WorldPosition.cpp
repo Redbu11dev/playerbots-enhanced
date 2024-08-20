@@ -279,7 +279,8 @@ WorldPosition::WorldPosition(const std::vector<WorldPosition>& list, const World
 
 float WorldPosition::distance(const WorldPosition& to) const
 {
-    if(mapid == to.getMapId())
+    if(mapid
+        == to.getMapId())
         return relPoint(to).size();
 
     //this -> mapTransfer | mapTransfer -> center

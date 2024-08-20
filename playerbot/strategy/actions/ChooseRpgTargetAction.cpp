@@ -128,19 +128,19 @@ float ChooseRpgTargetAction::getMaxRelevance(GuidPosition guidP)
 bool ChooseRpgTargetAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
-    TravelTarget* travelTarget = AI_VALUE(TravelTarget*, "travel target");
+    TravelTarget* travelTarget = ai->GetTravelTarget();
 
     GuidPosition masterRpgTarget;
     if (requester && requester->GetPlayerbotAI() && requester->GetMapId() == bot->GetMapId() && !requester->IsBeingTeleported())
     {
-        
+
     }
     else
     {
         requester = nullptr;
     }
 
-    std::unordered_map<ObjectGuid, uint32> targets;
+    std::unordered_map<ObjectGuid, float> targets;
     std::vector<ObjectGuid> targetList;
 
     std::list<ObjectGuid> possibleTargets = AI_VALUE(std::list<ObjectGuid>, "possible rpg targets");
@@ -389,10 +389,16 @@ bool ChooseRpgTargetAction::isUseful()
     if (guidP && guidP.distance(bot) < sPlayerbotAIConfig.reactDistance * 2)
         return false;
 
-    TravelTarget* travelTarget = AI_VALUE(TravelTarget*, "travel target");
+    TravelTarget* travelTarget = ai->GetTravelTarget();
 
     if (travelTarget->isTraveling() && AI_VALUE2(bool, "can free move to", *travelTarget->getPosition()))
         return false;
+
+    if (travelTarget->isForced())
+        return false;
+
+    /*if (!urand(0, 2) && travelTarget->getPosition() && travelTarget->distance(bot) > 30)
+        return false;*/
 
     if (AI_VALUE(std::list<ObjectGuid>, "possible rpg targets").empty())
         return false;

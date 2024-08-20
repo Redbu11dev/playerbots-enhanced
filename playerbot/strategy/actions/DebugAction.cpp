@@ -1000,7 +1000,12 @@ bool DebugAction::Execute(Event& event)
 
         uint32 i = 0;
 
-        std::vector<QuestTravelDestination*> dests = cont->questGivers;
+        std::vector<QuestTravelDestination*> dests;
+
+        for (auto questGiver : cont->questGivers)
+        {
+            dests.push_back(questGiver);
+        }
 
         std::sort(dests.begin(), dests.end(), [botPos](QuestTravelDestination* i, QuestTravelDestination* j) {return i->distanceTo(botPos) < j->distanceTo(botPos); });
 
@@ -1066,7 +1071,11 @@ bool DebugAction::Execute(Event& event)
 
         i = 0;
 
-       dests = cont->questGivers;
+        dests.clear();
+        for (auto questGiver : cont->questGivers)
+        {
+            dests.push_back(questGiver);
+        }
 
         std::sort(dests.begin(), dests.end(), [botPos](QuestTravelDestination* i, QuestTravelDestination* j) {return i->distanceTo(botPos) < j->distanceTo(botPos); });
 
