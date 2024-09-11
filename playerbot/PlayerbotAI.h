@@ -12,6 +12,7 @@
 #include <stack>
 #include "strategy/IterateItemsMask.h"
 #include "RandomPlayerbotMgr.h"
+#include "playerbot/TravelMgr.h"
 
 class Player;
 class PlayerbotMgr;
@@ -377,17 +378,41 @@ public:
     static GameObject* GetGameObject(GameObjectDataPair const* gameObjectDataPair);
     WorldObject* GetWorldObject(ObjectGuid guid);
     std::vector<Player*> GetPlayersInGroup();
+
+    TravelTarget* GetTravelTarget();
+    void SetTravelTarget(
+        TravelDestination* travelDestination,
+        WorldPosition* travelPosition,
+        bool groupCopy,
+        bool forced,
+        TravelStatus travelStatus,
+        uint32 expirationTimeMs
+    );
+
     void DropQuest(uint32 questId);
     std::vector<const Quest*> GetAllCurrentQuests();
     std::vector<const Quest*> GetCurrentIncompleteQuests();
     std::set<uint32> GetAllCurrentQuestIds();
     std::set<uint32> GetCurrentIncompleteQuestIds();
+    std::set<uint32> GetCurrentCompleteQuestIds();
+    std::set<uint32> GetCurrentFailedQuestIds();
     const Quest* GetCurrentIncompleteQuestWithId(uint32 questId);
     bool HasCurrentIncompleteQuestWithId(uint32 questId);
     std::vector<std::pair<const Quest*, uint32>> GetCurrentQuestsRequiringItemId(uint32 itemId);
+    bool HasQuestInQuestLog(uint32 questId);
+    bool HasIncompleteNotFailedQuestInQuestLog(uint32 questId);
+    bool HasCompleteQuestInQuestLog(uint32 questId);
+    bool IsQuestItemOrCreatureOrGoObjectiveFulfilled(uint32 questId, uint32 objective);
+    bool hasNotSoloableIncompleteQuests();
     const AreaTableEntry* GetCurrentArea();
     const AreaTableEntry* GetCurrentZone();
+    const uint32 GetCurrentAreaId();
+    const uint32 GetCurrentZoneId();
+    const uint32 GetCurrentMapId();
     std::string GetLocalizedAreaName(const AreaTableEntry* entry);
+    WorldPosition GetSpawnPositionRef();
+    WorldPosition GetCurrentWorldPositionRef();
+    bool IsInHigherLevelArea();
     bool IsInCapitalCity();
     ChatChannelSource GetChatChannelSource(Player* bot, uint32 type, std::string channelName);
     bool SayToGuild(std::string msg);

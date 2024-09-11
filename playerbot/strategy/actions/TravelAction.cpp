@@ -15,8 +15,8 @@ using namespace MaNGOS;
 
 bool TravelAction::Execute(Event& event)
 {    
-    TravelTarget * target = AI_VALUE(TravelTarget *, "travel target");
-    
+    TravelTarget * target = ai->GetTravelTarget();
+
     if (sServerFacade.isMoving(bot))
         return false;
 
@@ -60,7 +60,7 @@ bool TravelAction::Execute(Event& event)
 
 bool TravelAction::isUseful()
 {
-    return false && AI_VALUE(TravelTarget *,"travel target")->isActive() && (!AI_VALUE(GuidPosition,"rpg target") || !AI_VALUE(ObjectGuid,"attack target"));
+    return false && ai->GetTravelTarget()->isActive() && (!AI_VALUE(GuidPosition,"rpg target") || !AI_VALUE(ObjectGuid,"attack target"));
 }
 
 bool MoveToDarkPortalAction::Execute(Event& event)

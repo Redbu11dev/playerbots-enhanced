@@ -232,7 +232,7 @@ bool MoveToRpgTargetAction::isUseful()
         if (bot->IsMoving() && bot->GetMotionMaster() && bot->GetMotionMaster()->GetCurrentMovementGeneratorType() != FOLLOW_MOTION_TYPE)
             return false;
 
-    TravelTarget* travelTarget = AI_VALUE(TravelTarget*, "travel target");
+    TravelTarget* travelTarget = ai->GetTravelTarget();
 
     if (travelTarget->isTraveling() && AI_VALUE2(bool, "can free move to", travelTarget->GetPosStr()))
         return false;

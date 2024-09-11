@@ -1182,9 +1182,14 @@ void PlayerbotAI::Reset(bool full)
         aiObjectContext->GetValue<LastMovement& >("last area trigger")->Get().Set(NULL);
         aiObjectContext->GetValue<LastMovement& >("last taxi")->Get().Set(NULL);
 
-        aiObjectContext->GetValue<TravelTarget* >("travel target")->Get()->setTarget(sTravelMgr.nullTravelDestination, sTravelMgr.nullWorldPosition, true);
-        aiObjectContext->GetValue<TravelTarget* >("travel target")->Get()->setStatus(TravelStatus::TRAVEL_STATUS_EXPIRED);
-        aiObjectContext->GetValue<TravelTarget* >("travel target")->Get()->setExpireIn(1000);
+        SetTravelTarget(
+            sTravelMgr.nullTravelDestination,
+            sTravelMgr.nullWorldPosition,
+            true,
+            false,
+            TravelStatus::TRAVEL_STATUS_EXPIRED,
+            60000
+        );
 
         InterruptSpell();
 
@@ -2495,6 +2500,35 @@ std::vector<Player*> PlayerbotAI::GetPlayersInGroup()
     return members;
 }
 
+TravelTarget* PlayerbotAI::GetTravelTarget()
+{
+    return aiObjectContext->GetValue<TravelTarget*>("travel target")->Get();
+}
+
+void PlayerbotAI::SetTravelTarget(
+    TravelDestination* travelDestination,
+    WorldPosition* travelPosition,
+    bool groupCopy,
+    bool forced,
+    TravelStatus travelStatus,
+    uint32 expirationTimeMs
+)
+{
+    //groupCopy defaults to false
+
+    //travelStatus defaults to TRAVEL in setTarget()
+
+    //TravelTarget* target = AI_VALUE(TravelTarget*, "travel target");
+
+    TravelTarget* travelTarget = GetTravelTarget();
+
+    travelTarget->setTarget(travelDestination, travelPosition, groupCopy);
+    travelTarget->setForced(forced);
+    travelTarget->setStatus(travelStatus);
+    travelTarget->setExpireIn(expirationTimeMs);
+
+}
+
 void PlayerbotAI::DropQuest(uint32 questIdToDrop)
 {
     for (uint16 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
@@ -2601,6 +2635,50 @@ std::set<uint32> PlayerbotAI::GetCurrentIncompleteQuestIds()
     return result;
 }
 
+std::set<uint32> PlayerbotAI::GetCurrentCompleteQuestIds()
+{
+    std::set<uint32> result;
+
+    for (uint16 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
+    {
+        uint32 questId = bot->GetQuestSlotQuestId(slot);
+        if (!questId)
+        {
+            continue;
+        }
+
+        QuestStatus status = bot->GetQuestStatus(questId);
+        if (status == QUEST_STATUS_COMPLETE)
+        {
+            result.insert(questId);
+        }
+    }
+
+    return result;
+}
+
+std::set<uint32> PlayerbotAI::GetCurrentFailedQuestIds()
+{
+    std::set<uint32> result;
+
+    for (uint16 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
+    {
+        uint32 questId = bot->GetQuestSlotQuestId(slot);
+        if (!questId)
+        {
+            continue;
+        }
+
+        QuestStatus status = bot->GetQuestStatus(questId);
+        if (status == QUEST_STATUS_FAILED)
+        {
+            result.insert(questId);
+        }
+    }
+
+    return result;
+}
+
 const Quest* PlayerbotAI::GetCurrentIncompleteQuestWithId(uint32 pQuestId)
 {
     for (uint16 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
@@ -2666,6 +2744,76 @@ std::vector<std::pair<const Quest*, uint32>> PlayerbotAI::GetCurrentQuestsRequir
     return result;
 }
 
+bool PlayerbotAI::HasQuestInQuestLog(uint32 questId)
+{
+    return GetAllCurrentQuestIds().count(questId) > 0;
+}
+
+bool PlayerbotAI::HasIncompleteNotFailedQuestInQuestLog(uint32 questId)
+{
+    return HasCurrentIncompleteQuestWithId(questId);
+}
+
+bool PlayerbotAI::HasCompleteQuestInQuestLog(uint32 questId)
+{
+    return GetCurrentCompleteQuestIds().count(questId) > 0;
+}
+
+bool PlayerbotAI::IsQuestItemOrCreatureOrGoObjectiveFulfilled(uint32 questId, uint32 objective)
+{
+    auto quest = sObjectMgr.GetQuestTemplate(questId);
+    auto questStatus = bot->getQuestStatusMap()[questId];
+
+    uint32 reqCount = quest->ReqItemCount[objective];
+    uint32 hasCount = questStatus.m_itemcount[objective];
+
+    if (reqCount && hasCount < reqCount)
+        return true;
+
+    reqCount = quest->ReqCreatureOrGOCount[objective];
+    hasCount = questStatus.m_creatureOrGOcount[objective];
+
+    if (reqCount && hasCount < reqCount)
+        return true;
+
+    return false;
+}
+
+bool PlayerbotAI::hasNotSoloableIncompleteQuests()
+{
+    for (uint16 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
+    {
+        uint32 questId = bot->GetQuestSlotQuestId(slot);
+        if (!questId)
+        {
+            continue;
+        }
+
+        QuestStatus status = bot->GetQuestStatus(questId);
+        if (status == QUEST_STATUS_INCOMPLETE || status == QUEST_STATUS_NONE)
+        {
+            //result.push_back(sObjectMgr.GetQuestTemplate(questId));
+            ////Do not try to pick up dungeon/elite quests in instances without a group.
+//    //if ((questTemplate->GetType() == QUEST_TYPE_ELITE || questTemplate->GetType() == QUEST_TYPE_DUNGEON) && !AI_VALUE(bool, "can fight boss"))
+//    //    return false;
+
+            //QUEST_FLAGS_EXPLORATION
+
+            auto quest = sObjectMgr.GetQuestTemplate(questId);
+            if (quest
+                && (quest->GetType() == QUEST_TYPE_ELITE
+                    || quest->GetType() == QUEST_TYPE_DUNGEON
+                    || quest->GetType() == QUEST_TYPE_ESCORT
+                    || quest->GetLimitTime() > 0
+                    ))
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 const AreaTableEntry* PlayerbotAI::GetCurrentArea()
 {
     return GetAreaEntryByAreaID(sServerFacade.GetAreaId(bot));
@@ -2676,6 +2824,21 @@ const AreaTableEntry* PlayerbotAI::GetCurrentZone()
     return GetAreaEntryByAreaID(sTerrainMgr.GetZoneId(bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ()));
 }
 
+const uint32 PlayerbotAI::GetCurrentAreaId()
+{
+    return sServerFacade.GetAreaId(bot);
+}
+
+const uint32 PlayerbotAI::GetCurrentZoneId()
+{
+    return sTerrainMgr.GetZoneId(bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
+}
+
+const uint32 PlayerbotAI::GetCurrentMapId()
+{
+    return bot->GetMapId();
+}
+
 /*
 * @return localized area_name
 */
@@ -2684,14 +2847,50 @@ std::string PlayerbotAI::GetLocalizedAreaName(const AreaTableEntry* entry)
     return entry->area_name[BroadcastHelper::GetLocale()];
 }
 
+WorldPosition PlayerbotAI::GetSpawnPositionRef()
+{
+    PlayerInfo const* defaultPlayerInfo = sObjectMgr.GetPlayerInfo(bot->getRace(), bot->getClass());
+    if (defaultPlayerInfo)
+    {
+        WorldPosition pos(
+            defaultPlayerInfo->mapId,
+            defaultPlayerInfo->positionX,
+            defaultPlayerInfo->positionY,
+            defaultPlayerInfo->positionZ
+        );
+        return pos;
+    }
+    return GetCurrentWorldPositionRef();
+}
+
+WorldPosition PlayerbotAI::GetCurrentWorldPositionRef()
+{
+    WorldPosition pos(bot);
+    return pos;
+}
+
+bool PlayerbotAI::IsInHigherLevelArea()
+{
+    if (!bot->IsInWorld())
+        return false;
+
+    AreaTableEntry const* currentArea = GetCurrentArea();
+    if (currentArea && currentArea->area_level > (int32)bot->GetLevel())
+    {
+        return true;
+    }
+
+    return false;
+}
+
 bool PlayerbotAI::IsInCapitalCity()
 {
-    AreaTableEntry const* current_area = GetAreaEntryByAreaID(sServerFacade.GetAreaId(bot));
-    if (!current_area)
+    AreaTableEntry const* currentArea = GetAreaEntryByAreaID(sServerFacade.GetAreaId(bot));
+    if (!currentArea)
     {
         return false;
     }
-    return current_area->flags & AREA_FLAG_CAPITAL;
+    return currentArea->flags & AREA_FLAG_CAPITAL;
 }
 
 ChatChannelSource PlayerbotAI::GetChatChannelSource(Player* bot, uint32 type, std::string channelName)
@@ -5759,7 +5958,7 @@ std::string PlayerbotAI::HandleRemoteCommand(std::string command)
     {
         std::ostringstream out;
 
-        TravelTarget* target = GetAiObjectContext()->GetValue<TravelTarget*>("travel target")->Get();
+        TravelTarget* target = GetTravelTarget();
         if (target->getDestination()) {
             out << "Destination = " << target->getDestination()->getName();
 

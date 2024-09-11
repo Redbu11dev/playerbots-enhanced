@@ -54,7 +54,7 @@ void PossibleRpgTargetsValue::FindUnits(std::list<Unit*> &targets)
 
 bool PossibleRpgTargetsValue::AcceptUnit(Unit* unit)
 {
-    TravelTarget* travelTarget = context->GetValue<TravelTarget*>("travel target")->Get();
+    TravelTarget* travelTarget = ai->GetTravelTarget();
 
     if (travelTarget->getDestination() && travelTarget->getDestination()->getEntry() == unit->GetEntry())
         return true;

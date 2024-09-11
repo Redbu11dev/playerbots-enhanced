@@ -60,7 +60,7 @@ int ListQuestsAction::ListQuests(Player* requester, bool completed, bool silent,
     WorldPosition botPos(bot);
     
     if (travelDetail != QUEST_TRAVEL_DETAIL_NONE)
-        target = context->GetValue<TravelTarget*>("travel target")->Get();
+        target = ai->GetTravelTarget();
 
     int count = 0;
     for (uint16 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)

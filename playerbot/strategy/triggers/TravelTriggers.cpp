@@ -9,12 +9,12 @@ using namespace ai;
 
 bool NoTravelTargetTrigger::IsActive()
 {
-    return !context->GetValue<TravelTarget *>("travel target")->Get()->isActive();
+    return !ai->GetTravelTarget()->isActive();
 }
 
 bool FarFromTravelTargetTrigger::IsActive()
 {
-    return context->GetValue<TravelTarget*>("travel target")->Get()->isTraveling();
+    return ai->GetTravelTarget()->isTraveling();
 }
 
 bool NearDarkPortalTrigger::IsActive()

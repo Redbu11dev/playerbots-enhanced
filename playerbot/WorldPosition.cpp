@@ -143,7 +143,7 @@ GridMap* TerrainInfoAccess::LoadMapAndVMap(const uint32 x, const uint32 y, bool 
     if (!MMAP::MMapFactory::createOrGetMMapManager()->IsMMapIsLoaded(m_mapId, x, y))
     {
         // load navmesh
-        if (!MMAP::MMapFactory::createOrGetMMapManager()->loadMap(m_mapId, x, y))//
+        if (!MMAP::MMapFactory::createOrGetMMapManager()->loadMap(m_mapId, x, y))
             return nullptr;
     }
 

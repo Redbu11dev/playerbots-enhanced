@@ -311,7 +311,8 @@ namespace ai
         uint32 getMaxTravelTime() { return (1000.0 * distance(bot)) / bot->GetSpeed(MOVE_RUN); }
         uint32 getRetryCount(bool isMove) { return isMove ? moveRetryCount: extendRetryCount; }
 
-        bool isTraveling(); 
+        bool isNullDestination();
+        bool isTraveling();
         bool isActive();   
         bool isWorking();
         bool isPreparing();

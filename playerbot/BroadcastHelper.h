@@ -104,25 +104,9 @@ namespace ai
             Group* group,
             Guild* guild
         );
-        static bool BroadcastSuggestInstance(
-            PlayerbotAI* ai,
-            std::vector<std::string>& allowedInstances,
-            Player* bot
-        );
         static bool BroadcastSuggestQuest(
             PlayerbotAI* ai,
             std::vector<uint32>& quests,
-            Player* bot
-        );
-        static bool BroadcastSuggestGrindMaterials(
-            PlayerbotAI* ai,
-            std::string item,
-            Player* bot
-        );
-        static bool BroadcastSuggestGrindReputation(
-            PlayerbotAI* ai,
-            std::vector<std::string> levels,
-            std::vector<std::string> allowedFactions,
             Player* bot
         );
         static bool BroadcastSuggestSell(

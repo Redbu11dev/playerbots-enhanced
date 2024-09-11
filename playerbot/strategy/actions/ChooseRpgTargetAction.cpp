@@ -128,12 +128,12 @@ float ChooseRpgTargetAction::getMaxRelevance(GuidPosition guidP)
 bool ChooseRpgTargetAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
-    TravelTarget* travelTarget = AI_VALUE(TravelTarget*, "travel target");
+    TravelTarget* travelTarget = ai->GetTravelTarget();
 
     GuidPosition masterRpgTarget;
     if (requester && requester->GetPlayerbotAI() && requester->GetMapId() == bot->GetMapId() && !requester->IsBeingTeleported())
     {
-        
+
     }
     else
     {
@@ -389,7 +389,7 @@ bool ChooseRpgTargetAction::isUseful()
     if (guidP && guidP.distance(bot) < sPlayerbotAIConfig.reactDistance * 2)
         return false;
 
-    TravelTarget* travelTarget = AI_VALUE(TravelTarget*, "travel target");
+    TravelTarget* travelTarget = ai->GetTravelTarget();
 
     if (travelTarget->isTraveling() && AI_VALUE2(bool, "can free move to", *travelTarget->getPosition()))
         return false;

@@ -12,14 +12,14 @@ using namespace ai;
 
 bool MoveToTravelTargetAction::Execute(Event& event)
 {
-    TravelTarget* target = AI_VALUE(TravelTarget*, "travel target");
+    TravelTarget* target = ai->GetTravelTarget();
 
     WorldPosition botLocation(bot);
     WorldLocation location = *target->getPosition();
-    
+
     Group* group = bot->GetGroup();
     if (group && !urand(0, 1) && bot == ai->GetGroupMaster())
-    {        
+    {
         for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
         {
             Player* member = ref->getSource();
@@ -82,7 +82,7 @@ bool MoveToTravelTargetAction::Execute(Event& event)
     float mapId = location.mapid;
 
     //Move between 0.5 and 1.0 times the maxDistance.
-    float mod = urand(50, 100)/100.0;   
+    float mod = urand(50, 100)/100.0;
 
     x += cos(angle) * maxDistance * mod;
     y += sin(angle) * maxDistance * mod;
@@ -236,7 +236,7 @@ bool MoveToTravelTargetAction::Execute(Event& event)
             }
         }
     }
-     
+
     return canMove;
 }
 
@@ -245,7 +245,7 @@ bool MoveToTravelTargetAction::isUseful()
     if (!ai->AllowActivity(TRAVEL_ACTIVITY))
         return false;
 
-    if (!AI_VALUE(TravelTarget*,"travel target")->isTraveling())
+    if (!ai->GetTravelTarget()->isTraveling())
         return false;
 
     if (bot->IsTaxiFlying())
@@ -263,11 +263,11 @@ bool MoveToTravelTargetAction::isUseful()
     if (!AI_VALUE(bool, "can move around"))
         return false;
 
-    WorldPosition travelPos(*AI_VALUE(TravelTarget*, "travel target")->getPosition());
+    WorldPosition travelPos(*ai->GetTravelTarget()->getPosition());
 
     if (travelPos.isDungeon() && bot->GetGroup() && bot->GetGroup()->IsLeader(bot->GetObjectGuid()) && sTravelMgr.mapTransDistance(bot, travelPos, true) < sPlayerbotAIConfig.sightDistance && !AI_VALUE2(bool, "group and", "near leader"))
         return false;
-     
+
     if (AI_VALUE(bool, "has available loot"))
     {
         LootObject lootObject = AI_VALUE(LootObjectStack*, "available loot")->GetLoot(sPlayerbotAIConfig.lootDistance);
@@ -275,7 +275,7 @@ bool MoveToTravelTargetAction::isUseful()
             return false;
     }
 
-    if (!AI_VALUE2(bool, "can free move to", AI_VALUE(TravelTarget*,"travel target")->GetPosStr()))
+    if (!AI_VALUE2(bool, "can free move to", ai->GetTravelTarget()->GetPosStr()))
         return false;
 
     return true;

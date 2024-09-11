@@ -132,7 +132,7 @@ bool GoAction::TellWhereToGo(std::string& param, Player* requester) const
 
     ChooseTravelTargetAction* travelAction = new ChooseTravelTargetAction(ai);
 
-    TravelTarget* target = context->GetValue<TravelTarget*>("travel target")->Get();
+    TravelTarget* target = ai->GetTravelTarget();
 
     target->setStatus(TravelStatus::TRAVEL_STATUS_EXPIRED);
 
@@ -181,7 +181,7 @@ bool GoAction::LeaderAlreadyTraveling(TravelDestination* dest) const
         return false;
 
     Player* player = ai->GetGroupMaster();
-    TravelTarget* masterTarget = PAI_VALUE(TravelTarget*, "travel target");
+    TravelTarget* masterTarget = player->GetPlayerbotAI()->GetTravelTarget();
 
     if (!masterTarget->getDestination())
         return false;
@@ -263,7 +263,6 @@ bool GoAction::TellHowToGo(TravelDestination* dest, Player* requester) const
 
 bool GoAction::TravelTo(TravelDestination* dest, Player* requester) const
 {
-    TravelTarget* target = AI_VALUE(TravelTarget*, "travel target");
     WorldPosition botPos = WorldPosition(bot);
     if (dest)
     {
@@ -272,8 +271,14 @@ bool GoAction::TravelTo(TravelDestination* dest, Player* requester) const
         if (!point)
             return false;
 
-        target->setTarget(dest, point);
-        target->setForced(true);
+        bot->GetPlayerbotAI()->SetTravelTarget(
+            dest,
+            point,
+            false,
+            true,
+            TravelStatus::TRAVEL_STATUS_TRAVEL,
+            30 * MINUTE * IN_MILLISECONDS
+        );
 
         std::ostringstream out; out << "Traveling to " << dest->getTitle();
         ai->TellPlayerNoFacing(requester, out.str());
@@ -285,8 +290,14 @@ bool GoAction::TravelTo(TravelDestination* dest, Player* requester) const
     }
     else
     {
-        target->setTarget(sTravelMgr.nullTravelDestination, sTravelMgr.nullWorldPosition);
-        target->setForced(false);
+        bot->GetPlayerbotAI()->SetTravelTarget(
+            sTravelMgr.nullTravelDestination,
+            sTravelMgr.nullWorldPosition,
+            false,
+            false,
+            TravelStatus::TRAVEL_STATUS_COOLDOWN,
+            60000
+        );
         return false;
     }
 }

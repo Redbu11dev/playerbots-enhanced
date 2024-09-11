@@ -12,15 +12,40 @@ bool ChooseTravelTargetAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
 
+    auto worldPositionRef = ai->GetCurrentWorldPositionRef();
+
+    if (!worldPositionRef || !bot->IsInWorld()
+        || (worldPositionRef.getX() == 0 && worldPositionRef.getY() == 0 && worldPositionRef.getZ() == 0))
+    {
+        return false;
+    }
+
     //Get the current travel target. This target is no longer active.
-    TravelTarget * oldTarget = context->GetValue<TravelTarget *>("travel target")->Get();
+    TravelTarget * oldTarget = ai->GetTravelTarget();
+
+    if (oldTarget == nullptr)
+    {
+        SetNullTarget(oldTarget);
+        return true;
+    }
 
     //Select a new target to travel to. 
     TravelTarget newTarget = TravelTarget(ai);   
-    if (!oldTarget->isForced() || oldTarget->getStatus() == TravelStatus::TRAVEL_STATUS_EXPIRED)
+
+    bool isOldTargetAtZeros = oldTarget->isNullDestination()
+        || !oldTarget->getPosition()
+        || (oldTarget->getPosition()->getX() == 0 && oldTarget->getPosition()->getY() == 0 && oldTarget->getPosition()->getZ() == 0);
+
+    if (!oldTarget->isForced()
+        || oldTarget->getStatus() == TravelStatus::TRAVEL_STATUS_EXPIRED
+        || isOldTargetAtZeros)
+    {
         getNewTarget(requester, &newTarget, oldTarget);
+    }
     else
+    {
         newTarget.copyTarget(oldTarget);
+    }
 
     //If the new target is not active we failed.
     if (!newTarget.isActive() && !newTarget.isForced())
@@ -101,7 +126,7 @@ void ChooseTravelTargetAction::getNewTarget(Player* requester, TravelTarget* new
         ai->TellDebug(requester, "Pvp in Tarren Mill", "debug travel");
         WorldPosition pos = WorldPosition(bot);
         WorldPosition* botPos = &pos;
-        TravelTarget* target = context->GetValue<TravelTarget*>("travel target")->Get();
+        TravelTarget* target = ai->GetTravelTarget();
 
         TravelDestination* dest = ChooseTravelTargetAction::FindDestination(bot, "Tarren Mill");
         if (dest)
@@ -754,7 +779,7 @@ bool ChooseTravelTargetAction::SetGroupTarget(Player* requester, TravelTarget* t
         if (!player->GetPlayerbotAI()->GetAiObjectContext())
             continue;
 
-        TravelTarget* groupTarget = player->GetPlayerbotAI()->GetAiObjectContext()->GetValue<TravelTarget*>("travel target")->Get();
+        TravelTarget* groupTarget = player->GetPlayerbotAI()->GetTravelTarget();
 
         if (groupTarget->isGroupCopy())
             continue;
@@ -1158,7 +1183,7 @@ bool ChooseTravelTargetAction::isUseful()
             return false;
     }
 
-    return !context->GetValue<TravelTarget *>("travel target")->Get()->isActive();
+    return !ai->GetTravelTarget()->isActive();
 }
 
 

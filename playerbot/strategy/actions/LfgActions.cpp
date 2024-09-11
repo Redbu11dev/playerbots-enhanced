@@ -231,7 +231,7 @@ bool LfgJoinAction::JoinLFG()
     }
 
     bool groupQ = false;
-    TravelTarget* target = bot->GetPlayerbotAI()->GetAiObjectContext()->GetValue<TravelTarget*>("travel target")->Get();
+    TravelTarget* target = bot->GetPlayerbotAI()->GetTravelTarget();
     if (target)
     {
         state = target->getTravelState();

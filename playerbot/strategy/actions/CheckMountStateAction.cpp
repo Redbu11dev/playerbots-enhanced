@@ -18,7 +18,7 @@ bool CheckMountStateAction::Execute(Event& event)
 
     bool hasAttackers = AI_VALUE(bool, "has attackers");
     bool hasEnemy = AI_VALUE(bool, "has enemy player targets") || AI_VALUE(Unit*, "dps target");
-    TravelTarget* travelTarget = AI_VALUE(TravelTarget*, "travel target");
+    TravelTarget* travelTarget = ai->GetTravelTarget();
 
     bool canFly = CanFly();
 

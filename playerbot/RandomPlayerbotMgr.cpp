@@ -1874,7 +1874,7 @@ bool RandomPlayerbotMgr::ProcessBot(Player* player)
 
     // only teleport idle bots
     bool idleBot = false;
-    TravelTarget* target = player->GetPlayerbotAI()->GetAiObjectContext()->GetValue<TravelTarget*>("travel target")->Get();
+    TravelTarget* target = player->GetPlayerbotAI()->GetTravelTarget();
     if (target)
     {
         if (target->getTravelState() == TravelState::TRAVEL_STATE_IDLE)
@@ -3405,7 +3405,7 @@ void RandomPlayerbotMgr::PrintStats()
             break;
         }
 
-        TravelTarget* target = bot->GetPlayerbotAI()->GetAiObjectContext()->GetValue<TravelTarget*>("travel target")->Get();
+        TravelTarget* target = bot->GetPlayerbotAI()->GetTravelTarget();
         if (target)
         {
             TravelState state = target->getTravelState();
@@ -3611,12 +3611,14 @@ void RandomPlayerbotMgr::RandomTeleportForRpg(Player* bot, bool activeOnly)
     //Travel cooldown for 10 minutes.
     if (bot->GetPlayerbotAI())
     {
-        AiObjectContext* context = bot->GetPlayerbotAI()->GetAiObjectContext();
-        TravelTarget* travelTarget = AI_VALUE(TravelTarget*, "travel target");
-
-        travelTarget->setTarget(sTravelMgr.nullTravelDestination, sTravelMgr.nullWorldPosition, true);
-        travelTarget->setStatus(TravelStatus::TRAVEL_STATUS_COOLDOWN);
-        travelTarget->setExpireIn(10 * MINUTE * IN_MILLISECONDS);
+        bot->GetPlayerbotAI()->SetTravelTarget(
+            sTravelMgr.nullTravelDestination,
+            sTravelMgr.nullWorldPosition,
+            true,
+            false,
+            TravelStatus::TRAVEL_STATUS_COOLDOWN,
+            10 * MINUTE * IN_MILLISECONDS
+        );
     }
 }
 

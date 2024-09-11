@@ -269,9 +269,9 @@ bool PetitionTurnInAction::Execute(Event& event)
         return true;
     }
 
-    TravelTarget* oldTarget = context->GetValue<TravelTarget*>("travel target")->Get();
+    TravelTarget* oldTarget = ai->GetTravelTarget();
 
-    //Select a new target to travel to. 
+    //Select a new target to travel to.
     TravelTarget newTarget = TravelTarget(ai);
 
     ai->TellDebug(requester, "Handing in guild petition", "debug travel");
@@ -310,7 +310,7 @@ bool PetitionTurnInAction::isUseful()
             inCity = true;
     }
 
-    return inCity && !bot->GetGuildId() && AI_VALUE2(uint32, "item count", chat->formatQItem(5863)) && AI_VALUE(uint8, "petition signs") >= sWorld.getConfig(CONFIG_UINT32_MIN_PETITION_SIGNS) && !context->GetValue<TravelTarget*>("travel target")->Get()->isTraveling();
+    return inCity && !bot->GetGuildId() && AI_VALUE2(uint32, "item count", chat->formatQItem(5863)) && AI_VALUE(uint8, "petition signs") >= sWorld.getConfig(CONFIG_UINT32_MIN_PETITION_SIGNS) && !ai->GetTravelTarget()->isTraveling();
 };
 
 bool BuyTabardAction::Execute(Event& event)
@@ -321,9 +321,9 @@ bool BuyTabardAction::Execute(Event& event)
     if (canBuy && AI_VALUE2(uint32, "item count", chat->formatQItem(5976)))
         return true;
 
-    TravelTarget* oldTarget = context->GetValue<TravelTarget*>("travel target")->Get();
+    TravelTarget* oldTarget = ai->GetTravelTarget();
 
-    //Select a new target to travel to. 
+    //Select a new target to travel to.
     TravelTarget newTarget = TravelTarget(ai);
 
     ai->TellDebug(requester, "Buying a tabard", "debug travel");
@@ -370,5 +370,5 @@ bool BuyTabardAction::isUseful()
             inCity = true;
     }
 
-    return inCity && bot->GetGuildId() && !AI_VALUE2(uint32, "item count", chat->formatQItem(5976)) && AI_VALUE2(uint32, "free money for", uint32(NeedMoneyFor::guild)) >= 10000 && !context->GetValue<TravelTarget*>("travel target")->Get()->isTraveling();
+    return inCity && bot->GetGuildId() && !AI_VALUE2(uint32, "item count", chat->formatQItem(5976)) && AI_VALUE2(uint32, "free money for", uint32(NeedMoneyFor::guild)) >= 10000 && !ai->GetTravelTarget()->isTraveling();
 };

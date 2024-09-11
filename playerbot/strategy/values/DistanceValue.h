@@ -45,8 +45,7 @@ namespace ai
             }
             else if (qualifier == "travel target")
             {
-                TravelTarget * travelTarget = AI_VALUE(TravelTarget *, qualifier);
-                return travelTarget->distance(ai->GetBot());
+                return ai->GetTravelTarget()->distance(ai->GetBot());
             }
             else if (qualifier == "last long move")
             {

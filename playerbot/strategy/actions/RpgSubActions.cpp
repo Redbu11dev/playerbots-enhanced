@@ -125,7 +125,7 @@ bool RpgEmoteAction::Execute(Event& event)
 
     if (type != TEXTEMOTE_CHICKEN)
         rpg->AfterExecute();
-    else if(unit && !bot->GetNPCIfCanInteractWith(rpg->guidP(), UNIT_NPC_FLAG_QUESTGIVER) && AI_VALUE(TravelTarget*, "travel target")->getEntry() == 620)
+    else if(unit && !bot->GetNPCIfCanInteractWith(rpg->guidP(), UNIT_NPC_FLAG_QUESTGIVER) && ai->GetTravelTarget()->getEntry() == 620)
         rpg->AfterExecute(true,false, "rpg emote");
 
     DoDelay();
