@@ -87,15 +87,15 @@ void RpgQuestStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
 {
     triggers.push_back(new TriggerNode(
         "rpg start quest",
-        NextAction::array(0, new NextAction("rpg start quest", 1.080f), NULL)));
+        NextAction::array(0, new NextAction("rpg start quest", 2.080f), NULL)));
 
     triggers.push_back(new TriggerNode(
         "rpg end quest",
-        NextAction::array(0, new NextAction("rpg end quest", 1.090f), NULL)));
+        NextAction::array(0, new NextAction("rpg end quest", 2.090f), NULL)));
 
     triggers.push_back(new TriggerNode(
         "rpg repeat quest",
-        NextAction::array(0, new NextAction("rpg start quest", 1.030f), new NextAction("rpg end quest", 1.030f), NULL)));
+        NextAction::array(0, new NextAction("rpg start quest", 2.030f), new NextAction("rpg end quest", 2.030f), NULL)));
 }
 
 void RpgVendorStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)

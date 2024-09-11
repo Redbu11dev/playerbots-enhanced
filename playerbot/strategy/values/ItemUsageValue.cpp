@@ -275,13 +275,10 @@ ItemUsage ItemUsageValue::Calculate()
         return ItemUsage::ITEM_USAGE_DISENCHANT;
 
     //QUEST
-    if (!ai->GetMaster() || !sPlayerbotAIConfig.syncQuestWithPlayer || !IsItemUsefulForQuest(ai->GetMaster(), proto))
-    {
-        if (IsItemUsefulForQuest(bot, proto))
-            return ItemUsage::ITEM_USAGE_QUEST;
-        else if (IsItemUsefulForQuest(bot, proto, true) && CurrentStacks(ai, proto) < 2) //Do not sell quest items unless selling a full stack will stil keep enough in inventory.
-            return ItemUsage::ITEM_USAGE_KEEP;
-    }
+    if (IsItemUsefulForQuest(bot, proto))
+        return ItemUsage::ITEM_USAGE_QUEST;
+    else if (IsItemUsefulForQuest(bot, proto, true) && CurrentStacks(ai, proto) < 2) //Do not sell quest items unless selling a full stack will stil keep enough in inventory.
+        return ItemUsage::ITEM_USAGE_KEEP;
 
     //AMMO
     if ((proto->Class == ITEM_CLASS_PROJECTILE || (proto->Class == ITEM_CLASS_WEAPON && proto->SubClass == ITEM_SUBCLASS_WEAPON_THROWN)) && bot->CanUseItem(proto) == EQUIP_ERR_OK)
@@ -374,8 +371,10 @@ ItemUsage ItemUsageValue::Calculate()
     //VENDOR/AH
     if (proto->SellPrice > 0)
     {
+        bool shouldGetMoney = AI_VALUE(bool, "should get money");
+
         //if item value is significantly higher than its vendor sell price
-        if (IsMoreProfitableToSellToAHThanToVendor(proto, bot))
+        if (!shouldGetMoney && IsMoreProfitableToSellToAHThanToVendor(proto, bot))
         {
             if (proto->Bonding == NO_BIND)
                 return ItemUsage::ITEM_USAGE_AH;
@@ -1254,7 +1253,7 @@ bool ItemUsageValue::IsMoreProfitableToSellToAHThanToVendor(ItemPrototype const*
         if (proto->Class == ItemClass::ITEM_CLASS_ARMOR)
         {
             //shirts are nice to AH (or other cosmetics something?), also avoid something super cheap like starter boots
-            if (proto->SubClass == ItemSubclassArmor::ITEM_SUBCLASS_ARMOR_MISC && GetItemBaseValue(proto) > 10)
+            if (proto->InventoryType == InventoryType::INVTYPE_BODY)
             {
                 return true;
             }
@@ -1455,7 +1454,7 @@ uint32 ItemUsageValue::GetItemBaseValue(ItemPrototype const* proto, uint8 maxRea
     }
 
     //some items, which are not sold by vendors, have very low or very high vendor buy price, can't rely on it, need to adjust SellPrice
-    return static_cast<uint32>(proto->SellPrice * GetRarityPriceMultiplier(proto) * GetLevelPriceMultiplier(proto) * 1.5f);
+    return static_cast<uint32>(proto->SellPrice * GetRarityPriceMultiplier(proto) * GetLevelPriceMultiplier(proto) * 1.5f) + 10;
 }
 
 /*

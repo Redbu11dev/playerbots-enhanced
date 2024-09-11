@@ -21,6 +21,16 @@ void RpgHelper::BeforeExecute()
     setFacingTo(guidP());
 
     setFacing(guidP());
+
+    if (guidP().HasNpcFlag(UNIT_NPC_FLAG_QUESTGIVER))
+    {
+        /*if (ai->GetCurrentCompleteQuestIds().size() > 0)
+        {
+            ai->DoSpecificAction("talk to quest giver");
+        }*/
+        ai->DoSpecificAction("talk to quest giver");
+        ai->DoSpecificAction("accept all quests");
+    }
 }
 
 void RpgHelper::AfterExecute(bool doDelay, bool waitForGroup, std::string nextAction)

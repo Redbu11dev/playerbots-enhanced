@@ -133,6 +133,12 @@ bool GuildManageNearbyAction::Execute(Event& event)
                 continue;
         }
 
+        //much lower chance to invite real player
+        if (player->isRealPlayer() && urand(0, 1000))
+        {
+            continue;
+        }
+
         bool sameGroup = bot->GetGroup() && bot->GetGroup()->IsMember(player->GetObjectGuid());
 
         if (!sameGroup && sServerFacade.GetDistance2d(bot, player) > sPlayerbotAIConfig.spellDistance)
