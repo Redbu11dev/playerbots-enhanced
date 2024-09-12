@@ -68,6 +68,15 @@ bool PossibleRpgTargetsValue::AcceptUnit(Unit* unit)
 	if (unit->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_SPIRITHEALER))
 		return false;
 
+    if (unit->IsCreature())
+    {
+        Creature* creature = ai->GetCreature(unit->GetObjectGuid());
+
+        //ignore "unseen" npc
+        if (creature && creature->GetCreatureInfo()->Entry == 3094)
+            return false;
+    }
+
     for (std::vector<uint32>::iterator i = allowedNpcFlags.begin(); i != allowedNpcFlags.end(); ++i)
     {
 		if (unit->HasFlag(UNIT_NPC_FLAGS, *i)) return true;

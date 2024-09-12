@@ -156,8 +156,10 @@ bool MoveToTravelTargetAction::Execute(Event& event)
                     out << ",none";
                 else if (destination->getName() == "QuestTravelDestination")
                     out << ",quest";
-                else if (destination->getName() == "QuestRelationTravelDestination")
+                else if (destination->getName() == "QuestGiverTravelDestination")
                     out << ",questgiver";
+                else if (destination->getName() == "QuestTakerTravelDestination")
+                    out << ",questtaker";
                 else if (destination->getName() == "QuestObjectiveTravelDestination")
                     out << ",objective";
                 else  if (destination->getName() == "RpgTravelDestination")

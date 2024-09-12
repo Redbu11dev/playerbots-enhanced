@@ -319,7 +319,9 @@ void ChooseTravelTargetAction::ReportTravelTarget(Player* requester, TravelTarge
     if (newTarget->isForced())
         out << "(Forced) ";
 
-    if (destination->getName() == "QuestRelationTravelDestination" || destination->getName() == "QuestObjectiveTravelDestination")
+    if (destination->getName() == "QuestGiverTravelDestination"
+        || destination->getName() == "QuestTakerTravelDestination"
+        || destination->getName() == "QuestObjectiveTravelDestination")
     {
         QuestTravelDestination* QuestDestination = (QuestTravelDestination*)destination;
         Quest const* quest = QuestDestination->GetQuestTemplate();
@@ -397,7 +399,7 @@ void ChooseTravelTargetAction::ReportTravelTarget(Player* requester, TravelTarge
                 out << "rpg";
         }
 
-        out << " to " << RpgDestination->getTitle();        
+        out << " to " << RpgDestination->getTitle();
     }
     else if (destination->getName() == "ExploreTravelDestination")
     {
@@ -504,8 +506,10 @@ void ChooseTravelTargetAction::ReportTravelTarget(Player* requester, TravelTarge
             out << ",none";
         else if (destination->getName() == "QuestTravelDestination")
             out << ",quest";
-        else if (destination->getName() == "QuestRelationTravelDestination")
+        else if (destination->getName() == "QuestGiverTravelDestination")
             out << ",questgiver";
+        else if (destination->getName() == "QuestTakerTravelDestination")
+            out << ",questtaker";
         else if (destination->getName() == "QuestObjectiveTravelDestination")
             out << ",objective";
         else  if (destination->getName() == "RpgTravelDestination")
@@ -633,7 +637,7 @@ std::vector<WorldPosition*> ChooseTravelTargetAction::getLogicalPoints(Player* r
     for (auto pos : travelPoints)
     {
         PerformanceMonitorOperation* pmo1 = sPerformanceMonitor.start(PERF_MON_VALUE, "AreaLevel", &context->performanceStack);
-        
+
         if (pos->getMapId() == bot->GetMapId())
         {
             int32 areaLevel = pos->getAreaLevel();
@@ -822,7 +826,7 @@ bool ChooseTravelTargetAction::SetCurrentTarget(Player* requester, TravelTarget*
 
     if (!SetBestTarget(requester, target, TravelDestinations))
         return false;
-   
+
     target->setStatus(TravelStatus::TRAVEL_STATUS_TRAVEL);
     target->setRetry(false, oldTarget->getRetryCount(false) + 1);
 
@@ -900,12 +904,14 @@ bool ChooseTravelTargetAction::SetQuestTarget(Player* requester, TravelTarget* t
 bool ChooseTravelTargetAction::SetRpgTarget(Player* requester, TravelTarget* target)
 {
     //Find rpg npcs
-    std::vector<TravelDestination*> TravelDestinations = sTravelMgr.getRpgTravelDestinations(bot, true, false);
+    /*std::vector<RpgTravelDestination*> TravelDestinations = sTravelMgr.getRpgTravelDestinations(bot, true, false);
 
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
         ai->TellPlayerNoFacing(requester, std::to_string(TravelDestinations.size()) + " rpg destinations found.");
 
-    return SetBestTarget(requester, target, TravelDestinations);
+    return SetBestTarget(requester, target, TravelDestinations);*/
+
+    return false;
 }
 
 bool ChooseTravelTargetAction::SetGrindTarget(Player* requester, TravelTarget* target)

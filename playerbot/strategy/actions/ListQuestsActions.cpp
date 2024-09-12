@@ -83,7 +83,9 @@ int ListQuestsAction::ListQuests(Player* requester, bool completed, bool silent,
 
         if (travelDetail != QUEST_TRAVEL_DETAIL_NONE && target->getDestination())
         {
-            if (target->getDestination()->getName() == "QuestRelationTravelDestination" || target->getDestination()->getName() == "QuestObjectiveTravelDestination")
+            if (target->getDestination()->getName() == "QuestGiverTravelDestination"
+                || target->getDestination()->getName() == "QuestTakerTravelDestination"
+                || target->getDestination()->getName() == "QuestObjectiveTravelDestination")
             {
                 QuestTravelDestination* QuestDestination = (QuestTravelDestination*)target->getDestination();
 

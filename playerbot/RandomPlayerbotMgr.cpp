@@ -3222,7 +3222,7 @@ void RandomPlayerbotMgr::OnPlayerLogin(Player* player)
         }
         else
         {
-            std::vector<TravelDestination*> dests = sTravelMgr.getRpgTravelDestinations(player, true, true, 200000.0f);
+            std::vector<RpgTravelDestination*> dests = sTravelMgr.getRpgTravelDestinations(player, true, true, 200000.0f);
 
             do
             {
