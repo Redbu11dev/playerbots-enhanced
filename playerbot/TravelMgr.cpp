@@ -2908,9 +2908,9 @@ std::vector<QuestTravelDestination*> TravelMgr::GetAllAvailableQuestTravelDestin
     uint32 maxDistance
 )
 {
-    std::ostringstream out;
-    out << "---------bot: " << bot->GetName() << " Attempting to GetAllQuestTravelDestinations";
-    sLog.outBasic(out.str().c_str());
+    //std::ostringstream out;
+    //out << "---------bot: " << bot->GetName() << " Attempting to GetAllQuestTravelDestinations";
+    //sLog.outBasic(out.str().c_str());
 
 
     auto ai = bot->GetPlayerbotAI();

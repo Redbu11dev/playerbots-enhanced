@@ -21,19 +21,31 @@ namespace ai
         void setNewTarget(Player* requester, TravelTarget* newTarget, TravelTarget* oldTarget);
         void ReportTravelTarget(Player* requester, TravelTarget* newTarget, TravelTarget* oldTarget);
 
-        std::vector<WorldPosition*> getLogicalPoints(Player* requester, std::vector<WorldPosition*>& travelPoints);
-        bool SetBestTarget(Player* requester, TravelTarget* target, std::vector<TravelDestination*>& activeDestinations);
+        //std::vector<WorldPosition*> getLogicalPoints(Player* requester, std::vector<WorldPosition*>& travelPoints);
+        //bool SetBestTarget(Player* requester, TravelTarget* target, std::vector<TravelDestination*>& activeDestinations);
+
+        bool ApplyTravelTargetFromDestinations(
+            Player* requester,
+            TravelTarget* target,
+            std::vector<std::tuple<TravelDestination*, WorldPosition*, int>>& destinationsPointsWeightsFlat
+        );
 
         bool SetGroupTarget(Player* requester, TravelTarget* target);
         bool SetCurrentTarget(Player* requester, TravelTarget* target, TravelTarget* oldTarget);
-        bool SetQuestTarget(Player* requester, TravelTarget* target, bool newQuests = true, bool activeQuests = true, bool completedQuests = true);
-        bool SetRpgTarget(Player* requester, TravelTarget* target);
-        bool SetGrindTarget(Player* requester, TravelTarget* target);
-        bool SetBossTarget(Player* requester, TravelTarget* target);
-        bool SetExploreTarget(Player* requester, TravelTarget* target);
-        bool SetNpcFlagTarget(Player* requester, TravelTarget* target, std::vector<NPCFlags> flags, std::string name = "", std::vector<uint32> items = {}, bool force = true);
-        bool SetGOTypeTarget(Player* requester, TravelTarget* target, GameobjectTypes type, std::string name = "", bool force = true);
         bool SetNullTarget(TravelTarget* target);
+
+        bool SetQuestTarget(Player* requester, TravelTarget* target, bool ignoreNewLowLevelQuests, bool classQuestsOnly);
+        bool SetNpcFlagTarget(Player* requester, TravelTarget* target, std::vector<NPCFlags> flags, std::string name = "", std::vector<uint32> items = {}, bool force = true);
+
+
+        //bool SetQuestTarget(Player* requester, TravelTarget* target, bool newQuests = true, bool activeQuests = true, bool completedQuests = true);
+        //bool SetRpgTarget(Player* requester, TravelTarget* target);
+        //bool SetGrindTarget(Player* requester, TravelTarget* target);
+        //bool SetBossTarget(Player* requester, TravelTarget* target);
+        //bool SetExploreTarget(Player* requester, TravelTarget* target);
+        //bool SetNpcFlagTarget(Player* requester, TravelTarget* target, std::vector<NPCFlags> flags, std::string name = "", std::vector<uint32> items = {}, bool force = true);
+        //bool SetGOTypeTarget(Player* requester, TravelTarget* target, GameobjectTypes type, std::string name = "", bool force = true);
+
 
     public:
         static TravelDestination* FindDestination(Player* bot, std::string name, bool zones = true, bool npcs = true, bool quests = true, bool mobs = true, bool bosses = true);

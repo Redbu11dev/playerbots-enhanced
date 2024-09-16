@@ -138,22 +138,29 @@ bool AttackAction::Attack(Player* requester, Unit* target)
             }
         }
 
-        if (IsMovingAllowed() && !sServerFacade.IsInFront(bot, target, sPlayerbotAIConfig.sightDistance, CAST_ANGLE_IN_FRONT))
+        /*if (IsMovingAllowed() && !sServerFacade.IsInFront(bot, target, sPlayerbotAIConfig.sightDistance, CAST_ANGLE_IN_FRONT))
+        {
+            sServerFacade.SetFacingTo(bot, target);
+        }*/
+
+        if (target && target->IsAlive() && bot->IsInWorld() && !bot->IsBeingTeleported() && IsMovingAllowed())
         {
             sServerFacade.SetFacingTo(bot, target);
         }
 
-        bool result = true;
+        bool result = false;
 
         // Don't attack target if it is waiting for attack or in stealth
         if (!ai->HasStrategy("stealthed", BotState::BOT_STATE_COMBAT) && !isWaitingForAttack)
         {
-            ai->PlayAttackEmote(1);
-            result = bot->Attack(target, !ai->IsRanged(bot) || (sServerFacade.GetDistance2d(bot, target) < 5.0f));
+            bool isMeleeAttack = !ai->IsRanged(bot) || (sServerFacade.GetDistance2d(bot, target) < 5.0f);
+
+            result = bot->Attack(target, isMeleeAttack);
         }
 
         if (result)
         {
+            ai->PlayAttackEmote(1);
             // Force change combat state to have a faster reaction time
             ai->OnCombatStarted();
         }
