@@ -227,7 +227,7 @@ bool DebugAction::Execute(Event& event)
         std::string name = "bot";
 
         std::vector<std::string> args = Qualified::getMultiQualifiers(text.substr(4), " ");
-        TravelDestination* dest = ChooseTravelTargetAction::FindDestination(bot, args[0]);
+        /*TravelDestination* dest = ChooseTravelTargetAction::FindDestination(bot, args[0]);
 
         if (dest)
         {
@@ -237,7 +237,9 @@ bool DebugAction::Execute(Event& event)
                 poiPoint = *points.front();
                 name = dest->getTitle();
             }
-        }
+        }*/
+
+        name = "DebugAction poi NOT IMPLEMENTED";
 
         if (args.size() == 1)
         {
@@ -332,7 +334,7 @@ bool DebugAction::Execute(Event& event)
         }
         return true;
     }
-    else if (text.find("transport") == 0 && isMod) 
+    else if (text.find("transport") == 0 && isMod)
     {
         for (auto trans : WorldPosition(bot).getTransports())
         {
@@ -347,7 +349,7 @@ bool DebugAction::Execute(Event& event)
             }
         }
     }
-    else if (text.find("ontrans") == 0 && isMod) 
+    else if (text.find("ontrans") == 0 && isMod)
     {
         if (bot->GetTransport())
         {
@@ -457,7 +459,7 @@ bool DebugAction::Execute(Event& event)
 
         return true;
     }
-    else if (text.find("offtrans") == 0 && isMod) 
+    else if (text.find("offtrans") == 0 && isMod)
     {
         uint32 radius = 10;
 
@@ -496,7 +498,7 @@ bool DebugAction::Execute(Event& event)
             ai->TellPlayer(requester, "Path still on boat.");
             return false;
         }
-        
+
         for (auto& p : path)
         {
             p.CalculatePassengerOffset(bot->GetTransport());
@@ -540,7 +542,7 @@ bool DebugAction::Execute(Event& event)
 
                 if (!pos.isOnTransport(trans)) //When trying to calculate a position off the transport, act like the bot is off the transport.
                     pathBot = nullptr;
-                else 
+                else
                     bot->SetTransport(trans);
 
                 std::vector<WorldPosition> path = pos.getPathFrom(botPos, pathBot); //Use full pathstep to get proper paths on to transports.
@@ -590,7 +592,7 @@ bool DebugAction::Execute(Event& event)
 
         if (path.empty())
             return false;
-       
+
         Creature* wpCreature = bot->SummonCreature(6, path.back().getX(), path.back().getY(), path.back().getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
         wpCreature->SetObjectScale(0.5f);
 
@@ -714,17 +716,17 @@ bool DebugAction::Execute(Event& event)
 
         if (guidP.GetWorldObject())
             out << chat->formatWorldobject(guidP.GetWorldObject());
-        
+
         out << " (e:" << guidP.GetEntry();
-        
+
         if (guidP.GetUnit())
             out << ",level:" << guidP.GetUnit()->GetLevel();
-            
+
         out << ") ";
 
         guidP.printWKT(out);
 
-        out << "[a:" << guidP.getArea()->area_name[0]; 
+        out << "[a:" << guidP.getArea()->area_name[0];
 
         if (guidP.getArea() && guidP.getAreaLevel())
             out << " level: " << guidP.getAreaLevel();
@@ -794,7 +796,7 @@ bool DebugAction::Execute(Event& event)
         reaction[REP_HONORED] = "REP_HONORED";
         reaction[REP_REVERED] = "REP_REVERED";
         reaction[REP_EXALTED] = "REP_EXALTED";
-        
+
         if (guidP.GetUnit())
         {
             std::ostringstream out;
@@ -815,7 +817,7 @@ bool DebugAction::Execute(Event& event)
         }
 
         return true;
-    }  
+    }
     else if (text.find("go ") == 0)
     {
         std::ostringstream out;
@@ -949,7 +951,7 @@ bool DebugAction::Execute(Event& event)
 
         std::string destination = text.substr(7);
 
-        TravelDestination* dest = ChooseTravelTargetAction::FindDestination(bot, destination);
+        /*TravelDestination* dest = ChooseTravelTargetAction::FindDestination(bot, destination);
         if (dest)
         {
             std::vector<WorldPosition*> points = dest->nextPoint(&botPos, true);
@@ -975,7 +977,10 @@ bool DebugAction::Execute(Event& event)
         {
             ai->TellPlayerNoFacing(requester, "Destination " + destination + " not found.");
             return true;
-        }
+        }*/
+
+        ai->TellPlayerNoFacing(requester, "Destination " + destination + " not found. (DebugAction travel NOT IMPLEMENTED)");
+        return true;
     }
     else if (text.find("quest ") == 0)
     {
@@ -984,7 +989,10 @@ bool DebugAction::Execute(Event& event)
 
         Quest const* quest = sObjectMgr.GetQuestTemplate(questId);
 
-        if (!quest || sTravelMgr.getQuests().find(questId) == sTravelMgr.getQuests().end())
+        if (!quest
+            || (sTravelMgr.getQuestGiverTravelDestinations().count(questId) < 1
+            && sTravelMgr.getQuestObjectiveTravelDestinations().count(questId) < 1
+            && sTravelMgr.getQuestTakerTravelDestinations().count(questId) < 1))
         {
             ai->TellPlayerNoFacing(requester, "Quest " + text.substr(6) + " not found.");
             return false;
@@ -996,13 +1004,13 @@ bool DebugAction::Execute(Event& event)
 
         ai->TellPlayerNoFacing(requester, out);
 
-        QuestContainer* cont = sTravelMgr.getQuests()[questId];
+        //QuestContainer* cont = sTravelMgr.getQuests()[questId];
 
         uint32 i = 0;
 
         std::vector<QuestTravelDestination*> dests;
 
-        for (auto questGiver : cont->questGivers)
+        for (auto questGiver : sTravelMgr.getQuestGiverTravelDestinations()[questId])
         {
             dests.push_back(questGiver);
         }
@@ -1035,7 +1043,7 @@ bool DebugAction::Execute(Event& event)
 
             dests.clear();
 
-            for (auto g : cont->questObjectives)
+            for (auto g : sTravelMgr.getQuestObjectiveTravelDestinations()[questId])
             {
                 QuestObjectiveTravelDestination* d = (QuestObjectiveTravelDestination*)g;
                 if (d->getObjective() == o)
@@ -1072,7 +1080,7 @@ bool DebugAction::Execute(Event& event)
         i = 0;
 
         dests.clear();
-        for (auto questGiver : cont->questGivers)
+        for (auto questGiver : sTravelMgr.getQuestGiverTravelDestinations()[questId])
         {
             dests.push_back(questGiver);
         }
@@ -1103,22 +1111,25 @@ bool DebugAction::Execute(Event& event)
     }
     else if (text.find("quest") == 0)
     {
+
+        auto questGiverDestinations = sTravelMgr.getQuestGiverTravelDestinations();
+        auto questObjectiveDestinations = sTravelMgr.getQuestObjectiveTravelDestinations();
+        auto questTakerDestinations = sTravelMgr.getQuestTakerTravelDestinations();
+
         std::ostringstream out;
-        out << sTravelMgr.getQuests().size() << " quests ";
+        out << questGiverDestinations.size() + questObjectiveDestinations.size() + questTakerDestinations.size()
+            << " quests ";
 
         uint32 noT = 0, noG = 0, noO = 0;
 
-        for (auto q : sTravelMgr.getQuests())
-        {
-            if (q.second->questGivers.empty())
-                noG++;
+        if (questGiverDestinations.empty())
+            noG++;
 
-            if (q.second->questTakers.empty())
-                noT++;
+        if (questTakerDestinations.empty())
+            noT++;
 
-            if (q.second->questObjectives.empty())
-                noO++;
-        }
+        if (questObjectiveDestinations.empty())
+            noO++;
 
         out << noG << "|" << noT << "|" << noO << " bad.";
 
@@ -1133,7 +1144,7 @@ bool DebugAction::Execute(Event& event)
 
         uint32 noT = 0, noG = 0, noO = 0;
 
-        for (auto q : sTravelMgr.getQuests())
+        for (auto q : sTravelMgr.getQuestGiverTravelDestinations())
         {
             Quest const* quest = sObjectMgr.GetQuestTemplate(q.first);
 
@@ -1143,18 +1154,47 @@ bool DebugAction::Execute(Event& event)
                 continue;
             }
 
-            if (q.second->questGivers.empty() || q.second->questTakers.empty() || q.second->questObjectives.empty())
+            if (q.second.empty())
+            {
                 out << quest->GetTitle() << " ";
-
-            if (q.second->questGivers.empty())
                 out << " no G";
-
-            if (q.second->questTakers.empty())
-                out << " no T";
-
-            if (q.second->questObjectives.empty())
-                out << " no O";
+            }
         }
+
+        for (auto q : sTravelMgr.getQuestObjectiveTravelDestinations())
+        {
+            Quest const* quest = sObjectMgr.GetQuestTemplate(q.first);
+
+            if (!quest)
+            {
+                out << " " << q.first << " does not exists";
+                continue;
+            }
+
+            if (q.second.empty())
+            {
+                out << quest->GetTitle() << " ";
+                out << " no O";
+            }
+        }
+
+        for (auto q : sTravelMgr.getQuestTakerTravelDestinations())
+        {
+            Quest const* quest = sObjectMgr.GetQuestTemplate(q.first);
+
+            if (!quest)
+            {
+                out << " " << q.first << " does not exists";
+                continue;
+            }
+
+            if (q.second.empty())
+            {
+                out << quest->GetTitle() << " ";
+                out << " no T";
+            }
+        }
+
         ai->TellPlayerNoFacing(requester, out);
 
     }

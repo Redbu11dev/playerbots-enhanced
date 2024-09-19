@@ -1513,77 +1513,77 @@ bool ChooseTravelTargetAction::SetNpcFlagTarget(Player* requester, TravelTarget*
 //    return isActive;
 //}
 
-std::vector<std::string> split(const std::string& s, char delim);
-char* strstri(const char* haystack, const char* needle);
-
-//Find a destination based on (part of) it's name. Includes zones, ncps and mobs. Picks the closest one that matches.
-TravelDestination* ChooseTravelTargetAction::FindDestination(Player* bot, std::string name, bool zones, bool npcs, bool quests, bool mobs, bool bosses)
-{
-    PlayerbotAI* ai = bot->GetPlayerbotAI();
-
-    AiObjectContext* context = ai->GetAiObjectContext();
-
-    std::vector<TravelDestination*> dests;
-
-    //Quests
-    if (quests)
-    {
-        for (auto& d : sTravelMgr.getQuestTravelDestinations(bot, 0, true, true))
-        {
-            if (strstri(d->getTitle().c_str(), name.c_str()))
-                dests.push_back(d);
-        }
-    }
-
-    //Zones
-    if (zones)
-    {
-        for (auto& d : sTravelMgr.getExploreTravelDestinations(bot, true, true))
-        {
-            if (strstri(d->getTitle().c_str(), name.c_str()))
-                dests.push_back(d);
-        }
-    }
-
-    //Npcs
-    if (npcs)
-    {
-        for (auto& d : sTravelMgr.getRpgTravelDestinations(bot, true, true))
-        {
-            if (strstri(d->getTitle().c_str(), name.c_str()))
-                dests.push_back(d);
-        }
-    }
-
-    //Mobs
-    if (mobs)
-    {
-        for (auto& d : sTravelMgr.getGrindTravelDestinations(bot, true, true, 5000.0f, 0))
-        {
-            if (strstri(d->getTitle().c_str(), name.c_str()))
-                dests.push_back(d);
-        }
-    }
-
-    //Bosses
-    if (bosses)
-    {
-        for (auto& d : sTravelMgr.getBossTravelDestinations(bot, true, true))
-        {
-            if (strstri(d->getTitle().c_str(), name.c_str()))
-                dests.push_back(d);
-        }
-    }
-
-    WorldPosition botPos(bot);
-
-    if (dests.empty())
-        return nullptr;
-
-    TravelDestination* dest = *std::min_element(dests.begin(), dests.end(), [botPos](TravelDestination* i, TravelDestination* j) {return i->distanceTo(botPos) < j->distanceTo(botPos); });
-
-    return dest;
-};
+//std::vector<std::string> split(const std::string& s, char delim);
+//char* strstri(const char* haystack, const char* needle);
+//
+////Find a destination based on (part of) it's name. Includes zones, ncps and mobs. Picks the closest one that matches.
+//TravelDestination* ChooseTravelTargetAction::FindDestination(Player* bot, std::string name, bool zones, bool npcs, bool quests, bool mobs, bool bosses)
+//{
+//    PlayerbotAI* ai = bot->GetPlayerbotAI();
+//
+//    AiObjectContext* context = ai->GetAiObjectContext();
+//
+//    std::vector<TravelDestination*> dests;
+//
+//    //Quests
+//    if (quests)
+//    {
+//        for (auto& d : sTravelMgr.GetAllAvailableQuestTravelDestinations(bot, 0, false, false))
+//        {
+//            if (strstri(d->getTitle().c_str(), name.c_str()))
+//                dests.push_back(d);
+//        }
+//    }
+//
+//    //Zones
+//    if (zones)
+//    {
+//        for (auto& d : sTravelMgr.getExploreTravelDestinations(bot, true, true))
+//        {
+//            if (strstri(d->getTitle().c_str(), name.c_str()))
+//                dests.push_back(d);
+//        }
+//    }
+//
+//    //Npcs
+//    if (npcs)
+//    {
+//        for (auto& d : sTravelMgr.getRpgTravelDestinations(bot, true, true))
+//        {
+//            if (strstri(d->getTitle().c_str(), name.c_str()))
+//                dests.push_back(d);
+//        }
+//    }
+//
+//    //Mobs
+//    if (mobs)
+//    {
+//        for (auto& d : sTravelMgr.getGrindTravelDestinations(bot, true, true, 5000.0f, 0))
+//        {
+//            if (strstri(d->getTitle().c_str(), name.c_str()))
+//                dests.push_back(d);
+//        }
+//    }
+//
+//    //Bosses
+//    if (bosses)
+//    {
+//        for (auto& d : sTravelMgr.getBossTravelDestinations(bot, true, true))
+//        {
+//            if (strstri(d->getTitle().c_str(), name.c_str()))
+//                dests.push_back(d);
+//        }
+//    }
+//
+//    WorldPosition botPos(bot);
+//
+//    if (dests.empty())
+//        return nullptr;
+//
+//    TravelDestination* dest = *std::min_element(dests.begin(), dests.end(), [botPos](TravelDestination* i, TravelDestination* j) {return i->distanceTo(botPos) < j->distanceTo(botPos); });
+//
+//    return dest;
+//};
 
 bool ChooseTravelTargetAction::isUseful()
 {

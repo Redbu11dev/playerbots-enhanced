@@ -47,8 +47,8 @@ namespace ai
         //bool SetGOTypeTarget(Player* requester, TravelTarget* target, GameobjectTypes type, std::string name = "", bool force = true);
 
 
-    public:
-        static TravelDestination* FindDestination(Player* bot, std::string name, bool zones = true, bool npcs = true, bool quests = true, bool mobs = true, bool bosses = true);
+    //public:
+    //    static TravelDestination* FindDestination(Player* bot, std::string name, bool zones = true, bool npcs = true, bool quests = true, bool mobs = true, bool bosses = true);
     private:
         virtual bool needForQuest(Unit* target);
         virtual bool needItemForQuest(uint32 itemId, const Quest* questTemplate, const QuestStatusData* questStatus);

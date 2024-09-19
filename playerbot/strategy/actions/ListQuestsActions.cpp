@@ -104,7 +104,7 @@ int ListQuestsAction::ListQuests(Player* requester, bool completed, bool silent,
 
         if (travelDetail == QUEST_TRAVEL_DETAIL_SUMMARY)
         {
-            std::vector<TravelDestination*> allDestinations = sTravelMgr.getQuestTravelDestinations(bot, questId, true, true, -1);
+            /*std::vector<TravelDestination*> allDestinations = sTravelMgr.getQuestTravelDestinations(bot, questId, true, true, -1);
             std::vector<TravelDestination*> availDestinations = sTravelMgr.getQuestTravelDestinations(bot, questId, ai->GetMaster(), false, -1);
 
             uint32 desTot = allDestinations.size();
@@ -127,13 +127,16 @@ int ListQuestsAction::ListQuests(Player* requester, bool completed, bool silent,
             if (desFull > 0)
                 out << desFull << " crowded.";
             if (desRange > 0)
-                out << desRange << " out of range.";
+                out << desRange << " out of range.";*/
 
+
+            std::ostringstream out;
+            out << " ListQuests: QUEST_TRAVEL_DETAIL_SUMMARY: NOT IMPLEMENTED";
             ai->TellPlayer(requester, out);
         }
         else if (travelDetail == QUEST_TRAVEL_DETAIL_FULL)
         {
-            uint32 limit = 0;
+            /*uint32 limit = 0;
             std::vector<TravelDestination*> allDestinations = sTravelMgr.getQuestTravelDestinations(bot, questId, true, true, -1);
 
             std::sort(allDestinations.begin(), allDestinations.end(), [botPos](TravelDestination* i, TravelDestination* j) {return i->distanceTo(botPos) < j->distanceTo(botPos); });
@@ -163,7 +166,11 @@ int ListQuestsAction::ListQuests(Player* requester, bool completed, bool silent,
                 ai->TellPlayer(requester, out);
 
                 limit++;
-            }
+            }*/
+
+            std::ostringstream out;
+            out << " ListQuests: QUEST_TRAVEL_DETAIL_FULL: NOT IMPLEMENTED";
+            ai->TellPlayer(requester, out);
         }
     }
 

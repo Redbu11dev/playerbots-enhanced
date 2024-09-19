@@ -63,12 +63,12 @@ bool QueryQuestAction::Execute(Event& event)
 
         if (travel)
         {
-            uint32 limit = 0;
+            /*uint32 limit = 0;
             std::vector<TravelDestination*> allDestinations = sTravelMgr.getQuestTravelDestinations(bot, questId, true, true, -1);
 
             std::sort(allDestinations.begin(), allDestinations.end(), [botPos](TravelDestination* i, TravelDestination* j) {return i->distanceTo(botPos) < j->distanceTo(botPos); });
 
-            for (auto dest : allDestinations) 
+            for (auto dest : allDestinations)
             {
                 if (limit > 50)
                     continue;
@@ -94,7 +94,11 @@ bool QueryQuestAction::Execute(Event& event)
                 ai->TellPlayer(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 
                 limit++;
-            }
+            }*/
+
+            std::ostringstream out;
+            out << " QueryQuestAction: NOT IMPLEMENTED ";
+            ai->TellPlayer(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
         }
 
         return true;

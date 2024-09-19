@@ -48,15 +48,21 @@ bool GoAction::Execute(Event& event)
     }
     if (param.find("how") != std::string::npos && param.size() > 4)
     {
+        //std::string destination = param.substr(4);
+        //TravelDestination* dest = ChooseTravelTargetAction::FindDestination(bot, destination);
+        //if (!dest)
+        //{
+        //    ai->TellPlayerNoFacing(requester, "I don't know how to travel to " + destination);
+        //    return false;
+        //}
+        //return TellHowToGo(dest, requester);
+
+        assert(false);
         std::string destination = param.substr(4);
-        TravelDestination* dest = ChooseTravelTargetAction::FindDestination(bot, destination);
-        if (!dest)
-        {
-            ai->TellPlayerNoFacing(requester, "I don't know how to travel to " + destination);
-            return false;
-        }
-        return TellHowToGo(dest, requester);
+        ai->TellPlayerNoFacing(requester, "GoAction: how: NOT IMPLEMENTED " + destination);
+        return true;
     }
+
     std::map<std::string, int> goTos;
     goTos.emplace(std::pair("zone", 5));
     goTos.emplace(std::pair("quest", 6));
@@ -64,12 +70,18 @@ bool GoAction::Execute(Event& event)
     goTos.emplace(std::pair("mob", 4));
     goTos.emplace(std::pair("boss", 5));
     goTos.emplace(std::pair("to", 3));
+
     for (const auto& option : goTos)
     {
         if (param.find(option.first) == 0 && param.size() > option.second)
         {
             std::string destination = param.substr(option.second);
-            TravelDestination* dest = nullptr;
+
+            assert(false);
+            ai->TellPlayerNoFacing(requester, "GoAction: common: NOT IMPLEMENTED " + destination);
+            return true;
+
+            /*TravelDestination* dest = nullptr;
             if (option.first == "to")
             {
                 dest = ChooseTravelTargetAction::FindDestination(bot, destination);
@@ -91,17 +103,19 @@ bool GoAction::Execute(Event& event)
             if (ai->HasStrategy("stay", BotState::BOT_STATE_NON_COMBAT) || ai->HasStrategy("guard", BotState::BOT_STATE_NON_COMBAT) || (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && ai->GetMaster() && !ai->IsSelfMaster()))
                 return TellHowToGo(dest, requester);
 
-            return TravelTo(dest, requester);
+            return TravelTo(dest, requester);*/
 
         }
     }
     if (param.find("travel") != std::string::npos && param.size()> 7)
     {
-        std::string destination = param.substr(7);
 
-        TravelDestination* dest = ChooseTravelTargetAction::FindDestination(bot, destination);
+        assert(false);
 
-        return TravelTo(dest, requester);
+        //std::string destination = param.substr(7);
+
+        //TravelDestination* dest = ChooseTravelTargetAction::FindDestination(bot, destination);
+        //return TravelTo(dest, requester);
     }
 
     if (MoveToGo(param, requester))
@@ -150,10 +164,13 @@ bool GoAction::TellWhereToGo(std::string& param, Player* requester) const
         title = title.substr(title.find("[") + 1, title.find("]") - title.find("[") - 1);
 
 
-    TravelDestination* dest = ChooseTravelTargetAction::FindDestination(bot, title);
+    assert(false);
+    //TravelDestination* dest = ChooseTravelTargetAction::FindDestination(bot, title);
 
-    if (!dest)
-        dest = target->getDestination();
+    //if (!dest)
+    //    dest = target->getDestination();
+
+    TravelDestination* dest = target->getDestination();
 
     if (!dest)
     {

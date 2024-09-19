@@ -869,26 +869,33 @@ void TravelMgr::Clear()
 #endif
 #endif
 
-    for (auto& quest : quests)
+    for (auto& dests : questGiversDestinations)
     {
-        for (auto& dest : quest.second->questGivers)
-        {
-            delete dest;
-        }
-
-        for (auto& dest : quest.second->questTakers)
-        {
-            delete dest;
-        }
-
-        for (auto& dest : quest.second->questObjectives)
+        for (auto& dest : dests.second)
         {
             delete dest;
         }
     }
 
-    questGivers.clear();
-    quests.clear();
+    for (auto& dests : questObjectivesDestinations)
+    {
+        for (auto& dest : dests.second)
+        {
+            delete dest;
+        }
+    }
+
+    for (auto& dests : questTakersDestinations)
+    {
+        for (auto& dest : dests.second)
+        {
+            delete dest;
+        }
+    }
+
+    questGiversDestinations.clear();
+    questObjectivesDestinations.clear();
+    questTakersDestinations.clear();
     pointsMap.clear();
 }
 
@@ -1194,7 +1201,7 @@ void TravelMgr::SetMobAvoidAreaMap(uint32 mapId)
 
 void TravelMgr::LoadQuestTravelTable()
 {
-    if (!sTravelMgr.quests.empty())
+    if (!sTravelMgr.questGiversDestinations.empty() || !sTravelMgr.questObjectivesDestinations.empty() || !sTravelMgr.questTakersDestinations.empty())
         return;
 
     // Clearing store (for reloading case)
@@ -1269,8 +1276,6 @@ void TravelMgr::LoadQuestTravelTable()
         {
             uint32 questId = q.first;
 
-            QuestContainer* container = new QuestContainer;
-
             for (auto& r : q.second)
             {
                 uint32 flag = r.first;
@@ -1286,14 +1291,14 @@ void TravelMgr::LoadQuestTravelTable()
                     {
                         loc = new QuestGiverTravelDestination(questId, entry, sPlayerbotAIConfig.tooCloseDistance, sPlayerbotAIConfig.sightDistance);
                         loc->setExpireDelay(5 * 60 * 1000);
-                        container->questGivers.push_back((QuestGiverTravelDestination*)loc);
+                        questGiversDestinations[questId].push_back((QuestGiverTravelDestination*)loc);
                         locs.push_back(loc);
                     }
                     if (flag & (uint32)QuestRelationFlag::questTaker)
                     {
                         loc = new QuestTakerTravelDestination(questId, entry, sPlayerbotAIConfig.tooCloseDistance, sPlayerbotAIConfig.sightDistance);
                         loc->setExpireDelay(5 * 60 * 1000);
-                        container->questTakers.push_back((QuestTakerTravelDestination*)loc);
+                        questTakersDestinations[questId].push_back((QuestTakerTravelDestination*)loc);
                         locs.push_back(loc);
                     }
                     if (flag & ((uint32)QuestRelationFlag::objective1 | (uint32)QuestRelationFlag::objective2 | (uint32)QuestRelationFlag::objective3 | (uint32)QuestRelationFlag::objective4))
@@ -1310,7 +1315,7 @@ void TravelMgr::LoadQuestTravelTable()
 
                         loc = new QuestObjectiveTravelDestination(questId, entry, objective, sPlayerbotAIConfig.tooCloseDistance, sPlayerbotAIConfig.sightDistance);
                         loc->setExpireDelay(1 * 60 * 1000);
-                        container->questObjectives.push_back((QuestObjectiveTravelDestination*)loc);
+                        questObjectivesDestinations[questId].push_back((QuestObjectiveTravelDestination*)loc);
                         locs.push_back(loc);
                     }
 
@@ -1326,13 +1331,13 @@ void TravelMgr::LoadQuestTravelTable()
                 }
             }
 
-            if (!container->questTakers.empty())
+            /*if (!container->questTakers.empty())
             {
                 quests.insert(std::make_pair(questId, container));
 
                 for (auto loc : container->questGivers)
                     questGivers.push_back(loc);
-            }
+            }*/
         }
     }
 
@@ -2219,7 +2224,7 @@ void TravelMgr::LoadQuestTravelTable()
         }
     }
 
-    if (sPlayerbotAIConfig.hasLog("quest_map.csv"))
+    /*if (sPlayerbotAIConfig.hasLog("quest_map.csv"))
     {
         for (auto container : quests)
         {
@@ -2264,7 +2269,7 @@ void TravelMgr::LoadQuestTravelTable()
                 sPlayerbotAIConfig.log("quest_map.csv", out.str().c_str());
             }
         }
-    }
+    }*/
 
     if (sPlayerbotAIConfig.hasLog("telecache.csv"))
     {
@@ -2919,81 +2924,68 @@ std::vector<QuestTravelDestination*> TravelMgr::GetAllAvailableQuestTravelDestin
 
     std::vector<QuestTravelDestination*> retTravelLocations;
 
-    for (auto& questGiverDestination : questGivers)
+    for (auto& destinations : questGiversDestinations)
     {
-        //if (maxDistance > 0 && !questGiverDestination->hasPointsWithinDistance(ai->GetCurrentWorldPosition(), maxDistance))
-        //    continue;
-
-        auto destinationQuestId = questGiverDestination->GetQuestTemplate()->GetQuestId();
-
-        //ignore event quest givers
-        if (sTravelMgr.m_allWorldEventQuestIds.count(destinationQuestId) > 0
-            || sTravelMgr.m_allScourgeInvasionQuestIds.count(destinationQuestId) > 0
-            || sTravelMgr.m_allWarEffortQuestIds.count(destinationQuestId) > 0)
+        for (auto& questGiverDestination : destinations.second)
         {
-            continue;
-        }
-
-        if (questGiverDestination->getEntry() == 16484
-            || questGiverDestination->getEntry() == 16478)
-        {
-            continue;
-        }
-
-        auto destinationQuest = sObjectMgr.GetQuestTemplate(destinationQuestId);
-
-        if (classQuestsOnly && destinationQuest->GetRequiredClasses() == 0)
-            continue;
-
-        if (!classQuestsOnly)
-        {
-            //ignore low level quests
-            /*if (ignoreLowLevelQuests && !bot->CanSeeStartQuest(destinationQuest))
-                continue;*/
-        }
-
-        if (!destinationQuest->IsActive())
-            continue;
-
-        if (!questGiverDestination->isActive(bot))
-            continue;
-
-        // ignore PvP Halls for now
-        for (auto p : questGiverDestination->getPoints(true))
-        {
-            if (p->getMapId() == 449 || p->getMapId() == 450)
-                continue;
-        }
-
-        retTravelLocations.push_back(questGiverDestination);
-    }
-
-    for (auto& quest : quests)
-    {
-        for (auto& questTurnInDestination : quest.second->questTakers)
-        {
-            //if (maxDistance > 0 && !questTurnInDestination->hasPointsWithinDistance(ai->GetCurrentWorldPosition(), maxDistance))
+            //if (maxDistance > 0 && !questGiverDestination->hasPointsWithinDistance(ai->GetCurrentWorldPosition(), maxDistance))
             //    continue;
 
-            if (questTurnInDestination->getEntry() == 16484
-                || questTurnInDestination->getEntry() == 16478)
+            auto destinationQuestId = questGiverDestination->GetQuestTemplate()->GetQuestId();
+
+            //ignore event quest givers
+            if (sTravelMgr.m_allWorldEventQuestIds.count(destinationQuestId) > 0
+                || sTravelMgr.m_allScourgeInvasionQuestIds.count(destinationQuestId) > 0
+                || sTravelMgr.m_allWarEffortQuestIds.count(destinationQuestId) > 0)
             {
                 continue;
             }
 
-            auto destinationQuestId = questTurnInDestination->GetQuestTemplate()->GetQuestId();
+            //ignore battleground quests
+            if (sTravelMgr.m_allBattlegroundQuestIds.count(destinationQuestId) > 0)
+            {
+                continue;
+            }
+
+            //special ignore
+            if (questGiverDestination->getEntry() == 16484
+                || questGiverDestination->getEntry() == 16478)
+            {
+                continue;
+            }
+
             auto destinationQuest = sObjectMgr.GetQuestTemplate(destinationQuestId);
 
             if (classQuestsOnly && destinationQuest->GetRequiredClasses() == 0)
                 continue;
 
-            if (!questTurnInDestination->isActive(bot))
+            if (!classQuestsOnly)
+            {
+                //ignore low level quests
+                /*if (ignoreLowLevelQuests && !bot->CanSeeStartQuest(destinationQuest))
+                    continue;*/
+            }
+
+            if (!destinationQuest->IsActive())
                 continue;
 
-            retTravelLocations.push_back(questTurnInDestination);
-        }
+            if (!questGiverDestination->isActive(bot))
+                continue;
 
-        for (auto& questObjectiveDestination : quest.second->questObjectives)
+            // ignore PvP Halls for now
+            for (auto p : questGiverDestination->getPoints(true))
+            {
+                if (p->getMapId() == 449 || p->getMapId() == 450)
+                    continue;
+            }
+
+            retTravelLocations.push_back(questGiverDestination);
+        }
+    }
+
+    for (auto& destinations : questObjectivesDestinations)
+    {
+        for (auto questObjectiveDestination : destinations.second)
         {
             //if (maxDistance > 0 && !questObjectiveDestination->hasPointsWithinDistance(ai->GetCurrentWorldPosition(), maxDistance))
             //    continue;
@@ -3007,6 +2999,12 @@ std::vector<QuestTravelDestination*> TravelMgr::GetAllAvailableQuestTravelDestin
             auto destinationQuestId = questObjectiveDestination->GetQuestTemplate()->GetQuestId();
             auto destinationQuest = sObjectMgr.GetQuestTemplate(destinationQuestId);
 
+            //ignore battleground quests
+            if (sTravelMgr.m_allBattlegroundQuestIds.count(destinationQuestId) > 0)
+            {
+                continue;
+            }
+
             if (classQuestsOnly && destinationQuest->GetRequiredClasses() == 0)
                 continue;
 
@@ -3017,109 +3015,202 @@ std::vector<QuestTravelDestination*> TravelMgr::GetAllAvailableQuestTravelDestin
         }
     }
 
+    for (auto& destinations : questTakersDestinations)
+    {
+        for (auto questTurnInDestination : destinations.second)
+        {
+            //if (maxDistance > 0 && !questTurnInDestination->hasPointsWithinDistance(ai->GetCurrentWorldPosition(), maxDistance))
+            //    continue;
+
+            if (questTurnInDestination->getEntry() == 16484
+                || questTurnInDestination->getEntry() == 16478)
+            {
+                continue;
+            }
+
+            auto destinationQuestId = questTurnInDestination->GetQuestTemplate()->GetQuestId();
+            auto destinationQuest = sObjectMgr.GetQuestTemplate(destinationQuestId);
+
+            //ignore battleground quests
+            if (sTravelMgr.m_allBattlegroundQuestIds.count(destinationQuestId) > 0)
+            {
+                continue;
+            }
+
+            if (classQuestsOnly && destinationQuest->GetRequiredClasses() == 0)
+                continue;
+
+            if (!questTurnInDestination->isActive(bot))
+                continue;
+
+            retTravelLocations.push_back(questTurnInDestination);
+        }
+    }
+
+    //for (auto& quest : quests)
+    //{
+        //for (auto& questTurnInDestination : quest.second->questTakers)
+        //{
+        //    //if (maxDistance > 0 && !questTurnInDestination->hasPointsWithinDistance(ai->GetCurrentWorldPosition(), maxDistance))
+        //    //    continue;
+
+        //    if (questTurnInDestination->getEntry() == 16484
+        //        || questTurnInDestination->getEntry() == 16478)
+        //    {
+        //        continue;
+        //    }
+
+        //    auto destinationQuestId = questTurnInDestination->GetQuestTemplate()->GetQuestId();
+        //    auto destinationQuest = sObjectMgr.GetQuestTemplate(destinationQuestId);
+
+        //    //ignore battleground quests
+        //    if (sTravelMgr.m_allBattlegroundQuestIds.count(destinationQuestId) > 0)
+        //    {
+        //        continue;
+        //    }
+
+        //    if (classQuestsOnly && destinationQuest->GetRequiredClasses() == 0)
+        //        continue;
+
+        //    if (!questTurnInDestination->isActive(bot))
+        //        continue;
+
+        //    retTravelLocations.push_back(questTurnInDestination);
+        //}
+
+        //for (auto& questObjectiveDestination : quest.second->questObjectives)
+        //{
+        //    //if (maxDistance > 0 && !questObjectiveDestination->hasPointsWithinDistance(ai->GetCurrentWorldPosition(), maxDistance))
+        //    //    continue;
+
+        //    if (questObjectiveDestination->getEntry() == 16484
+        //        || questObjectiveDestination->getEntry() == 16478)
+        //    {
+        //        continue;
+        //    }
+
+        //    auto destinationQuestId = questObjectiveDestination->GetQuestTemplate()->GetQuestId();
+        //    auto destinationQuest = sObjectMgr.GetQuestTemplate(destinationQuestId);
+
+        //    //ignore battleground quests
+        //    if (sTravelMgr.m_allBattlegroundQuestIds.count(destinationQuestId) > 0)
+        //    {
+        //        continue;
+        //    }
+
+        //    if (classQuestsOnly && destinationQuest->GetRequiredClasses() == 0)
+        //        continue;
+
+        //    if (!questObjectiveDestination->isActive(bot))
+        //        continue;
+
+        //    retTravelLocations.push_back(questObjectiveDestination);
+        //}
+    //}
+
     return retTravelLocations;
 }
 
-std::vector<TravelDestination*> TravelMgr::getQuestTravelDestinations(Player* bot, int32 questId, bool ignoreFull, bool ignoreInactive, float maxDistance, bool ignoreObjectives)
-{
-    WorldPosition botLocation(bot);
-
-    std::vector<TravelDestination*> retTravelLocations;
-
-    if (questId == 0)
-    {
-        for (auto& dest : questGivers)
-        {
-            if (!ignoreInactive && !dest->isActive(bot))
-                continue;
-
-            if (maxDistance > 0 && dest->distanceTo(&botLocation) > maxDistance)
-                continue;
-
-            retTravelLocations.push_back(dest);
-        }
-        for (auto& quest : quests)
-        {
-            for (auto& dest : quest.second->questTakers)
-            {
-                if (!ignoreInactive && !dest->isActive(bot))
-                    continue;
-
-                if (maxDistance > 0 && dest->distanceTo(&botLocation) > maxDistance)
-                    continue;
-
-                retTravelLocations.push_back(dest);
-            }
-
-            if (!ignoreObjectives)
-                for (auto& dest : quest.second->questObjectives)
-                {
-                    if (!ignoreInactive && !dest->isActive(bot))
-                        continue;
-
-                    if (maxDistance > 0 && dest->distanceTo(&botLocation) > maxDistance)
-                        continue;
-
-                    retTravelLocations.push_back(dest);
-                }
-        }
-    }
-    else if (questId == -1)
-    {
-        for (auto& dest : questGivers)
-        {
-            if (!ignoreInactive && !dest->isActive(bot))
-                continue;
-
-            if (maxDistance > 0 && dest->distanceTo(&botLocation) > maxDistance)
-                continue;
-
-            // ignore PvP Halls for now
-            for (auto p : dest->getPoints(true))
-                if (p->getMapId() == 449 || p->getMapId() == 450)
-                    continue;
-
-            retTravelLocations.push_back(dest);
-        }
-    }
-    else
-    {
-        auto i = quests.find(questId);
-
-        if (i != quests.end())
-        {
-            for (auto& dest : i->second->questTakers)
-            {
-                if (!ignoreInactive && !dest->isActive(bot))
-                    continue;
-
-                if (maxDistance > 0 && dest->distanceTo(&botLocation) > maxDistance)
-                    continue;
-
-                // ignore PvP Halls for now
-                for (auto p : dest->getPoints(true))
-                    if (p->getMapId() == 449 || p->getMapId() == 450)
-                        continue;
-
-                retTravelLocations.push_back(dest);
-            }
-
-            if (!ignoreObjectives)
-                for (auto& dest : i->second->questObjectives)
-                {
-                    if (!ignoreInactive && !dest->isActive(bot))
-                        continue;
-
-                    if (maxDistance > 0 && dest->distanceTo(&botLocation) > maxDistance)
-                        continue;
-
-                    retTravelLocations.push_back(dest);
-                }
-        }
-    }
-
-    return retTravelLocations;
-}
+//std::vector<TravelDestination*> TravelMgr::getQuestTravelDestinations(Player* bot, int32 questId, bool ignoreFull, bool ignoreInactive, float maxDistance, bool ignoreObjectives)
+//{
+//    WorldPosition botLocation(bot);
+//
+//    std::vector<TravelDestination*> retTravelLocations;
+//
+//    if (questId == 0)
+//    {
+//        for (auto& dest : questGivers)
+//        {
+//            if (!ignoreInactive && !dest->isActive(bot))
+//                continue;
+//
+//            if (maxDistance > 0 && dest->distanceTo(&botLocation) > maxDistance)
+//                continue;
+//
+//            retTravelLocations.push_back(dest);
+//        }
+//        for (auto& quest : quests)
+//        {
+//            for (auto& dest : quest.second->questTakers)
+//            {
+//                if (!ignoreInactive && !dest->isActive(bot))
+//                    continue;
+//
+//                if (maxDistance > 0 && dest->distanceTo(&botLocation) > maxDistance)
+//                    continue;
+//
+//                retTravelLocations.push_back(dest);
+//            }
+//
+//            if (!ignoreObjectives)
+//                for (auto& dest : quest.second->questObjectives)
+//                {
+//                    if (!ignoreInactive && !dest->isActive(bot))
+//                        continue;
+//
+//                    if (maxDistance > 0 && dest->distanceTo(&botLocation) > maxDistance)
+//                        continue;
+//
+//                    retTravelLocations.push_back(dest);
+//                }
+//        }
+//    }
+//    else if (questId == -1)
+//    {
+//        for (auto& dest : questGivers)
+//        {
+//            if (!ignoreInactive && !dest->isActive(bot))
+//                continue;
+//
+//            if (maxDistance > 0 && dest->distanceTo(&botLocation) > maxDistance)
+//                continue;
+//
+//            // ignore PvP Halls for now
+//            for (auto p : dest->getPoints(true))
+//                if (p->getMapId() == 449 || p->getMapId() == 450)
+//                    continue;
+//
+//            retTravelLocations.push_back(dest);
+//        }
+//    }
+//    else
+//    {
+//        auto i = quests.find(questId);
+//
+//        if (i != quests.end())
+//        {
+//            for (auto& dest : i->second->questTakers)
+//            {
+//                if (!ignoreInactive && !dest->isActive(bot))
+//                    continue;
+//
+//                if (maxDistance > 0 && dest->distanceTo(&botLocation) > maxDistance)
+//                    continue;
+//
+//                // ignore PvP Halls for now
+//                for (auto p : dest->getPoints(true))
+//                    if (p->getMapId() == 449 || p->getMapId() == 450)
+//                        continue;
+//
+//                retTravelLocations.push_back(dest);
+//            }
+//
+//            if (!ignoreObjectives)
+//                for (auto& dest : i->second->questObjectives)
+//                {
+//                    if (!ignoreInactive && !dest->isActive(bot))
+//                        continue;
+//
+//                    if (maxDistance > 0 && dest->distanceTo(&botLocation) > maxDistance)
+//                        continue;
+//
+//                    retTravelLocations.push_back(dest);
+//                }
+//        }
+//    }
+//
+//    return retTravelLocations;
+//}
 
 std::vector<RpgTravelDestination*> TravelMgr::getRpgTravelDestinations(Player* bot, bool ignoreFull, bool ignoreInactive, float maxDistance)
 {
